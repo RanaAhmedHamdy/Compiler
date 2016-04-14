@@ -51,7 +51,42 @@ Node::~Node()
 }
 
 /***********************************************************************************/
+static class GlobalNFA
+{
+public:
+	GlobalNFA();
+	~GlobalNFA();
+	static void AddNFA(string character, vector<Node*> * FirstNode);
+	static Node* getNFA() { return StartNode; };
+private:
+	static GlobalNFA::Node * StartNode;
+};
 
+Node* GlobalNFA::StartNode = new Node;
+GlobalNFA::GlobalNFA()
+{
+}
+
+GlobalNFA::~GlobalNFA()
+{
+}
+
+void GlobalNFA::AddNFA(string character, vector<Node*> * FirstNode)
+{
+	map<string, vector<Node*>*> ::iterator it;
+	it = StartNode->getNodesMap()->find(character);
+	if (it != StartNode->getNodesMap()->end())
+	{
+		it->second->insert(it->second->end(), FirstNode->begin(), FirstNode->end());
+	}
+	else
+	{
+		vector<Node*>* T = new vector<Node*>;
+		T->insert(T->end(), FirstNode->begin(), FirstNode->end());
+		StartNode->getNodesMap()->emplace(character, T);
+	}
+}
+/**********************************************************************************/
 static class Utils
 {
 public:
@@ -85,7 +120,7 @@ public:
 void Parser::buildNFAwithEpsilon(vector<string> tokens) {
 	Node * allNodes;
 	for (int i = 0; i < tokens.size(); i++) {
-		for (int j = tokens[i].length(); j >= 0; j--) {
+		for (int j = tokens[i].length()-1; j >= 0; j--) {
 			string keyword = tokens[i];
 			Node* n = new Node;
 			vector<Node*>* nodes = new vector<Node*>;
@@ -93,18 +128,20 @@ void Parser::buildNFAwithEpsilon(vector<string> tokens) {
 			if (j == tokens[i].length()) {
 				n->setType(NODE_TYPE::ACCEPTANCE);
 				n->setValue(tokens[i]);
-				string s(1, keyword[j - 1]);
+				string s(1, keyword[j ]);
 				n->getNodesMap()->emplace(s, nodes);
 			}
 			else if (j == 0) {
 				n->setType(NODE_TYPE::START);
 				nodes->push_back(allNodes);
 				//add n to GlobalNFA
+				string s(1, keyword[j]);
+				GlobalNFA::AddNFA(s, nodes);
 			}
 			else {
 				n->setType(NODE_TYPE::NODE);
 				nodes->push_back(allNodes);
-				string s(1, keyword[j - 1]);
+				string s(1, keyword[j]);
 				n->getNodesMap()->emplace(s, nodes);
 			}
 			allNodes = n;
@@ -113,46 +150,30 @@ void Parser::buildNFAwithEpsilon(vector<string> tokens) {
 }
 
 /***************************************************************************************/
-static class GlobalNFA
+void Traverse(Node * n)
 {
-public:
-	GlobalNFA();
-	~GlobalNFA();
-	void AddNFA(string character, Node * FirstNode);
-private:
-	Node * StartNode = new Node();
-};
-
-GlobalNFA::GlobalNFA()
-{
-}
-
-GlobalNFA::~GlobalNFA()
-{
-}
-
-void GlobalNFA::AddNFA(string character, Node * FirstNode)
-{
-	map<string,vector<Node*>*> ::iterator it;
-	it =  StartNode->getNodesMap()->find(character);
-	if (it != StartNode->getNodesMap()->end())
+	if (n)
 	{
-		it->second->push_back(FirstNode);
-	}
-	else
-	{
-		vector<Node*>* T = new vector<Node*>;
-		T->push_back(FirstNode);
-		StartNode->getNodesMap()->emplace(character, T);
+		for (auto p : *n->getNodesMap())
+		{
+			cout << p.first << "\n";
+			for (int i = 0; i <p.second->size(); i++)
+			{
+				Traverse(p.second->at(i));
+			}
+		}
+		cout << "===================================" << "\n";
 	}
 }
 /*******************************************************************************************/
 int main(int argc, char ** argv)
 {
-	string keywordInput = "else while if";
+	string keywordInput = "else int while if wood ellel kojo";
 	vector<string> tokens = Utils::SplitString(keywordInput, " ");
 
 	Parser::buildNFAwithEpsilon(tokens);
+
+	Traverse(GlobalNFA::getNFA());
 
 
 	////tesssttttttttttttttttttttttt
