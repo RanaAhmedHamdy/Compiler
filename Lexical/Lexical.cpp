@@ -152,7 +152,7 @@ void Parser::buildNFAwithEpsilon(vector<string> tokens) {
 /***************************************************************************************/
 void Traverse(Node * n)
 {
-	if (n && n->getNodeType() != NODE_TYPE::ACCEPTANCE)
+	if (n)
 	{
 		for (auto p : *n->getNodesMap())
 		{
