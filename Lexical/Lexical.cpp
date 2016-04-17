@@ -175,23 +175,6 @@ int main(int argc, char ** argv)
 
 	Traverse(GlobalNFA::getNFA());
 
-
-	////tesssttttttttttttttttttttttt
-	//for (int i = 0; i < allNodes.size(); i++) {
-	//	map<string, vector<Node>> nodesMap = allNodes[i].getNodesMap();
-	//	for (auto &p : nodesMap)
-	//	{
-	//		cout << "input of currnt node       " + p.first + "\n";
-
-	//		if (!p.second.empty()) {
-	//			map<string, vector<Node>> m = p.second[0].getNodesMap();
-	//			for (auto &l : m)
-	//			{
-	//				cout << "input of pointed to node       " + l.first + "\n";
-	//			}
-	//		}
-	//	}
-	//}
 	char  c;
 	scanf("%c",&c);
 	return 0;
