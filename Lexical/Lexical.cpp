@@ -9,6 +9,33 @@ using namespace std;
 
 enum NODE_TYPE { START, ACCEPTANCE, NODE };
 /*************************************************************************/
+class DFANode
+{
+	private:
+		NODE_TYPE type;
+		string value;
+		map<string, DFANode*>* nodesMap = new map<string, DFANode*>;
+
+	public:
+		DFANode();
+		~DFANode();
+
+		map<string, DFANode*>* getNodesMap() { return nodesMap; }
+		NODE_TYPE getNodeType() { return type; }
+		string getValue() { return value; }
+
+		void setType(NODE_TYPE type) { this->type = type; }
+		void setValue(string value) { this->value = value; }
+};
+
+DFANode::DFANode()
+{
+}
+
+DFANode::~DFANode()
+{
+}
+/*************************************************************************/
 class Node {
 
 private:
@@ -119,6 +146,7 @@ public:
 	static void CreateTransition(Node* Start, Node* End, string Input);
 	static void CreateUnion(Node * A_Start, Node* B_Start, Node * Start, Node * End);
 	static void CreateConcatition();
+	static DFANode* buildDFA(Node* startnode);
 };
 
 void Parser::buildNFAwithEpsilon(vector<string> tokens) {
@@ -152,6 +180,27 @@ void Parser::buildNFAwithEpsilon(vector<string> tokens) {
 	}
 }
 
+DFANode* Parser::buildDFA(Node* startNode)
+{
+	DFANode* copy = NULL;
+	if (startNode)
+	{
+		copy = new DFANode;
+		copy->setType(startNode->getNodeType());
+		copy->setValue(startNode->getValue());
+		for (auto p : *startNode->getNodesMap())
+		{
+			cout << p.first << "\n";
+			for (int i = 0; i < p.second->size(); i++)
+			{
+				copy->getNodesMap()->emplace(p.first, buildDFA(p.second->at(i)));
+			}
+			cout << "***********************" << "\n";
+		}
+	}
+	return copy;
+}
+
 /***************************************************************************************/
 void Traverse(Node * n)
 {
@@ -168,6 +217,19 @@ void Traverse(Node * n)
 		cout << "===================================" << "\n";
 	}
 }
+
+void TraverseDFA(DFANode * n)
+{
+	if (n)
+	{
+		for (auto p : *n->getNodesMap())
+		{
+			cout << p.first << "\n";
+			TraverseDFA(p.second);
+		}
+		cout << "===================================" << "\n";
+	}
+}
 /*******************************************************************************************/
 int main(int argc, char ** argv)
 {
@@ -177,7 +239,9 @@ int main(int argc, char ** argv)
 
 	Parser::buildNFAwithEpsilon(tokens);
 
-	Traverse(StartNode);
+	TraverseDFA(Parser::buildDFA(StartNode));
+	//Traverse(StartNode);
+
 	char  c;
 	scanf("%c",&c);
 	return 0;
