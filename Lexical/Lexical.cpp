@@ -118,9 +118,9 @@ public:
 };
 
 void Parser::buildNFAwithEpsilon(vector<string> tokens) {
-	Node * allNodes;
+	Node * PreNode;
 	for (int i = 0; i < tokens.size(); i++) {
-		for (int j = tokens[i].length()-1; j >= 0; j--) {
+		for (int j = tokens[i].length(); j >= 0; j--) {
 			string keyword = tokens[i];
 			Node* n = new Node;
 			vector<Node*>* nodes = new vector<Node*>;
@@ -129,22 +129,22 @@ void Parser::buildNFAwithEpsilon(vector<string> tokens) {
 				n->setType(NODE_TYPE::ACCEPTANCE);
 				n->setValue(tokens[i]);
 				string s(1, keyword[j ]);
-				n->getNodesMap()->emplace(s, nodes);
 			}
 			else if (j == 0) {
 				n->setType(NODE_TYPE::START);
-				nodes->push_back(allNodes);
+				nodes->push_back(PreNode);
 				//add n to GlobalNFA
 				string s(1, keyword[j]);
+				n->getNodesMap()->emplace(s, nodes);
 				GlobalNFA::AddNFA(s, nodes);
 			}
 			else {
 				n->setType(NODE_TYPE::NODE);
-				nodes->push_back(allNodes);
+				nodes->push_back(PreNode);
 				string s(1, keyword[j]);
 				n->getNodesMap()->emplace(s, nodes);
 			}
-			allNodes = n;
+			PreNode = n;
 		}
 	}
 }
@@ -168,13 +168,13 @@ void Traverse(Node * n)
 /*******************************************************************************************/
 int main(int argc, char ** argv)
 {
+	printf("version %d\n", _MSC_VER);
 	string keywordInput = "else int while if wood ellel kojo";
 	vector<string> tokens = Utils::SplitString(keywordInput, " ");
 
 	Parser::buildNFAwithEpsilon(tokens);
 
 	Traverse(GlobalNFA::getNFA());
-
 	char  c;
 	scanf("%c",&c);
 	return 0;
