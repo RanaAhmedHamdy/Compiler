@@ -8,7 +8,6 @@
 using namespace std;
 
 enum NODE_TYPE { START, ACCEPTANCE, NODE };
-
 /*************************************************************************/
 class Node {
 
@@ -16,7 +15,7 @@ private:
 	map<string, vector<Node*>*>* nodesMap = new map<string, vector<Node*>*>;
 	NODE_TYPE type;
 	string value;
-
+	string Lexeme;
 public:
 	Node();
 	Node(map<string, vector<Node*>*>* nodesMap, NODE_TYPE type, string value);
@@ -68,6 +67,24 @@ Node::~Node()
 }
 
 /***********************************************************************************/
+class NFA
+{
+	Node * Start = new Node;
+	Node* End = new Node;
+public:
+	NFA(string Transition);
+	Node* GetStart() { return Start; }
+	Node* GetEnd() { return End; }
+};
+
+NFA::NFA(string Transition)
+{
+	vector<Node *>* X = new vector<Node*>;
+	X->push_back(this->End);
+	this->Start->AddTransition(Transition, X);
+}
+
+/***********************************************************************************/
 Node* StartNode = new Node;
 
 /**********************************************************************************/
@@ -99,6 +116,9 @@ static class Parser
 {
 public:
 	static void buildNFAwithEpsilon(vector<string> tokens);
+	static void CreateTransition(Node* Start, Node* End, string Input);
+	static void CreateUnion(Node * A_Start, Node* B_Start, Node * Start, Node * End);
+	static void CreateConcatition();
 };
 
 void Parser::buildNFAwithEpsilon(vector<string> tokens) {
@@ -117,7 +137,6 @@ void Parser::buildNFAwithEpsilon(vector<string> tokens) {
 			else if (j == 0) {
 				n->setType(NODE_TYPE::START);
 				nodes->push_back(PreNode);
-				//add n to GlobalNFA
 				string s(1, keyword[j]);
 				n->getNodesMap()->emplace(s, nodes);
 				StartNode->AddTransition(s, nodes);
