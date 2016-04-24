@@ -50,6 +50,7 @@ public:
 	~Node();
 	vector<Node*>* next(string input);
 	map<string, vector<Node*>*>* getNodesMap() { return nodesMap; }
+	void AddTransition(string Character, vector<Node*>* LocalStart);
 	NODE_TYPE getNodeType() { return type; }
 	string getValue() { return value; }
 
@@ -60,6 +61,22 @@ public:
 vector<Node*>* Node::next(string input)
 {
 	return nodesMap->at(input);
+}
+
+void Node::AddTransition(string Character, vector<Node*>* LocalStart)
+{
+	map<string, vector<Node*>*> ::iterator it;
+	it = this->getNodesMap()->find(Character);
+	if (it != this->getNodesMap()->end())
+	{
+		it->second->insert(it->second->end(), LocalStart->begin(), LocalStart->end());
+	}
+	else
+	{
+		vector<Node*>* T = new vector<Node*>;
+		T->insert(T->end(), LocalStart->begin(), LocalStart->end());
+		this->getNodesMap()->emplace(Character, T);
+	}
 }
 
 Node::Node(map<string, vector<Node*>*>* nodesMap, NODE_TYPE type, string value)
@@ -78,41 +95,8 @@ Node::~Node()
 }
 
 /***********************************************************************************/
-static class GlobalNFA
-{
-public:
-	GlobalNFA();
-	~GlobalNFA();
-	static void AddNFA(string character, vector<Node*> * FirstNode);
-	static Node* getNFA() { return StartNode; };
-private:
-	static GlobalNFA::Node * StartNode;
-};
+Node* StartNode = new Node;
 
-Node* GlobalNFA::StartNode = new Node;
-GlobalNFA::GlobalNFA()
-{
-}
-
-GlobalNFA::~GlobalNFA()
-{
-}
-
-void GlobalNFA::AddNFA(string character, vector<Node*> * FirstNode)
-{
-	map<string, vector<Node*>*> ::iterator it;
-	it = StartNode->getNodesMap()->find(character);
-	if (it != StartNode->getNodesMap()->end())
-	{
-		it->second->insert(it->second->end(), FirstNode->begin(), FirstNode->end());
-	}
-	else
-	{
-		vector<Node*>* T = new vector<Node*>;
-		T->insert(T->end(), FirstNode->begin(), FirstNode->end());
-		StartNode->getNodesMap()->emplace(character, T);
-	}
-}
 /**********************************************************************************/
 static class Utils
 {
@@ -164,7 +148,7 @@ void Parser::buildNFAwithEpsilon(vector<string> tokens) {
 				//add n to GlobalNFA
 				string s(1, keyword[j]);
 				n->getNodesMap()->emplace(s, nodes);
-				GlobalNFA::AddNFA(s, nodes);
+				StartNode->AddTransition(s, nodes);
 			}
 			else {
 				n->setType(NODE_TYPE::NODE);
@@ -236,7 +220,9 @@ int main(int argc, char ** argv)
 
 	Parser::buildNFAwithEpsilon(tokens);
 
-	TraverseDFA(Parser::buildDFA(GlobalNFA::getNFA()));
+	TraverseDFA(Parser::buildDFA(StartNode));
+	//Traverse(StartNode);
+
 	char  c;
 	scanf("%c",&c);
 	return 0;
