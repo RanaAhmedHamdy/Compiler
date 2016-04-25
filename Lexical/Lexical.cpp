@@ -40,6 +40,7 @@ class Node {
 
 private:
 	map<string, vector<Node*>*>* nodesMap = new map<string, vector<Node*>*>;
+	vector<Node*>* Epsilon = new vector<Node*>;
 	NODE_TYPE type;
 	string value;
 	string Lexeme;
@@ -49,7 +50,9 @@ public:
 	~Node();
 	vector<Node*>* next(string input);
 	map<string, vector<Node*>*>* getNodesMap() { return nodesMap; }
+	vector<Node*>* GetEpsilon() { return Epsilon; }
 	void AddTransition(string Character, vector<Node*>* LocalStart);
+	void AddTransition(string Character, Node* LocalStart);
 	NODE_TYPE getNodeType() { return type; }
 	string getValue() { return value; }
 
@@ -78,6 +81,13 @@ void Node::AddTransition(string Character, vector<Node*>* LocalStart)
 	}
 }
 
+void Node::AddTransition(string Character, Node * LocalStart)
+{
+	vector<Node*>* X = new vector<Node*>;
+	X->push_back(LocalStart);
+	AddTransition(Character, X);
+}
+
 Node::Node(map<string, vector<Node*>*>* nodesMap, NODE_TYPE type, string value)
 {
 	this->nodesMap = nodesMap;
@@ -99,18 +109,21 @@ class NFA
 	Node * Start = new Node;
 	Node* End = new Node;
 public:
-	NFA(string Transition);
+	NFA();
+	~NFA();
 	Node* GetStart() { return Start; }
 	Node* GetEnd() { return End; }
+	void SetStart(Node* N) { Start = N; }
+	void SetEnd(Node * N) { End = N; }
 };
 
-NFA::NFA(string Transition)
+NFA::NFA()
 {
-	vector<Node *>* X = new vector<Node*>;
-	X->push_back(this->End);
-	this->Start->AddTransition(Transition, X);
 }
 
+NFA::~NFA()
+{
+}
 /***********************************************************************************/
 Node* StartNode = new Node;
 
@@ -143,9 +156,10 @@ static class Parser
 {
 public:
 	static void buildNFAwithEpsilon(vector<string> tokens);
-	static void CreateTransition(Node* Start, Node* End, string Input);
-	static void CreateUnion(Node * A_Start, Node* B_Start, Node * Start, Node * End);
-	static void CreateConcatition();
+	static NFA* CreateTransition(string Input);
+	static NFA* CreateUnion(vector<NFA*>* NFACollection);
+	static NFA* CreateConcatition(vector<NFA*>* NFACollection);
+	static NFA* CreateKleen(NFA* nfa);
 	static DFANode* buildDFA(Node* startnode);
 };
 
@@ -178,6 +192,47 @@ void Parser::buildNFAwithEpsilon(vector<string> tokens) {
 			PreNode = n;
 		}
 	}
+}
+
+NFA * Parser::CreateTransition(string Input)
+{
+	NFA * X = new NFA;
+	X->GetStart()->AddTransition(Input, X->GetEnd());
+	return X;
+}
+
+NFA * Parser::CreateUnion(vector<NFA*>* NFACollection)
+{
+	NFA* X = new NFA;
+	for (int i = 0; i < NFACollection->size(); i++)
+	{
+		X->GetStart()->GetEpsilon()->push_back(NFACollection->at(i)->GetStart());
+		NFACollection->at(i)->GetEnd()->GetEpsilon()->push_back(X->GetEnd());
+	}
+	return X;
+}
+
+NFA * Parser::CreateConcatition(vector<NFA*>* NFACollection)
+{
+	NFA * X = new NFA;
+	X->SetStart(NFACollection->at(0)->GetStart());
+	for (int i = 0; i < NFACollection->size()-1; i++)
+	{
+		NFACollection->at(i)->GetEnd()->GetEpsilon()->push_back(NFACollection->at(i + 1)->GetStart());
+	}
+	X->SetEnd(NFACollection->at(NFACollection->size() - 1)->GetEnd());
+
+	return X;
+}
+
+NFA * Parser::CreateKleen(NFA * nfa)
+{
+	NFA* X = new NFA;
+	X->GetStart()->GetEpsilon()->push_back(X->GetEnd());
+	X->GetStart()->GetEpsilon()->push_back(nfa->GetStart());
+	nfa->GetEnd()->GetEpsilon()->push_back(X->GetStart());
+	nfa->GetEnd()->GetEpsilon()->push_back(nfa->GetStart());
+	return X;
 }
 
 DFANode* Parser::buildDFA(Node* startNode)
