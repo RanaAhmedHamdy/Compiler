@@ -198,6 +198,7 @@ NFA * Parser::CreateTransition(string Input)
 {
 	NFA * X = new NFA;
 	X->GetStart()->AddTransition(Input, X->GetEnd());
+	X->GetEnd()->setType(NODE_TYPE::ACCEPTANCE);
 	return X;
 }
 
@@ -208,6 +209,7 @@ NFA * Parser::CreateUnion(vector<NFA*>* NFACollection)
 	{
 		X->GetStart()->GetEpsilon()->push_back(NFACollection->at(i)->GetStart());
 		NFACollection->at(i)->GetEnd()->GetEpsilon()->push_back(X->GetEnd());
+		NFACollection->at(i)->GetEnd()->setType(NODE_TYPE::ACCEPTANCE);
 	}
 	return X;
 }
@@ -230,7 +232,7 @@ NFA * Parser::CreateKleen(NFA * nfa)
 	NFA* X = new NFA;
 	X->GetStart()->GetEpsilon()->push_back(X->GetEnd());
 	X->GetStart()->GetEpsilon()->push_back(nfa->GetStart());
-	nfa->GetEnd()->GetEpsilon()->push_back(X->GetStart());
+	nfa->GetEnd()->GetEpsilon()->push_back(X->GetEnd());
 	nfa->GetEnd()->GetEpsilon()->push_back(nfa->GetStart());
 	return X;
 }
@@ -327,9 +329,9 @@ int main(int argc, char ** argv)
 	Traverse(A->GetStart());*/
 	//#4 Kleen this will cause stack overflow, but this means it works 
 	//due to repeate edge and optional edge 
-	/*NFA * A = Parser::CreateTransition("L");
+	NFA * A = Parser::CreateTransition("L");
 	NFA * B = Parser::CreateKleen(A);
-	Traverse(B->GetStart());*/
+	Traverse(B->GetStart());
 
 
 	char  c;
