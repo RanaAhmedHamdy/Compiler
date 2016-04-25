@@ -269,6 +269,11 @@ void Traverse(Node * n)
 				Traverse(p.second->at(i));
 			}
 		}
+		for (auto p : *n->GetEpsilon())
+		{
+			cout << "Epsilon" << "\n";
+			Traverse(p);
+		}
 		cout << "===================================" << "\n";
 	}
 }
@@ -288,14 +293,44 @@ void TraverseDFA(DFANode * n)
 /*******************************************************************************************/
 int main(int argc, char ** argv)
 {
-	printf("version %d\n", _MSC_VER);
 	string keywordInput = "else int while if wood ellel kojo";
-	vector<string> tokens = Utils::SplitString(keywordInput, " ");
+	//NFA test
+	//vector<string> tokens = Utils::SplitString(keywordInput, " ");
 
-	Parser::buildNFAwithEpsilon(tokens);
+	//Parser::buildNFAwithEpsilon(tokens);
 
-	TraverseDFA(Parser::buildDFA(StartNode));
+	////TraverseDFA(Parser::buildDFA(StartNode));
 	//Traverse(StartNode);
+	//NFA builders test
+	//#1 transition
+	/*NFA * A = Parser::CreateTransition("L");
+	Traverse(A->GetStart());*/
+	//#2 Concatination
+	/*string X = "else";
+	vector<NFA *> K;
+	for (int i = 0; i < X.length(); i++)
+	{
+		string l(1, X[i]);
+		K.push_back(Parser::CreateTransition(l));
+	}
+	NFA * A = Parser::CreateConcatition(&K);
+	Traverse(A->GetStart());*/
+	//#3 Union
+	/*string X = "else";
+	vector<NFA *> K;
+	for (int i = 0; i < X.length(); i++)
+	{
+		string l(1, X[i]);
+		K.push_back(Parser::CreateTransition(l));
+	}
+	NFA * A = Parser::CreateUnion(&K);
+	Traverse(A->GetStart());*/
+	//#4 Kleen this will cause stack overflow, but this means it works 
+	//due to repeate edge and optional edge 
+	/*NFA * A = Parser::CreateTransition("L");
+	NFA * B = Parser::CreateKleen(A);
+	Traverse(B->GetStart());*/
+
 
 	char  c;
 	scanf("%c",&c);
