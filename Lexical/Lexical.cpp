@@ -258,7 +258,9 @@ DFANode* Parser::buildDFA(Node* startNode)
 		//get all nodes with epsilon from start node
 		//add them to nodes vector in start node
 		vector<Node*>* epsilonNodes = EpsilonClosure(StartNode);
-		startDFANode->GetNFANodes()->insert(startDFANode->GetNFANodes()->end(), epsilonNodes->begin(), epsilonNodes->end());
+		
+		if(!epsilonNodes->empty())
+			startDFANode->GetNFANodes()->insert(startDFANode->GetNFANodes()->end(), epsilonNodes->begin(), epsilonNodes->end());
 		
 		//queue for dfa states
 		vector<DFANode*>* DFAStates = new vector<DFANode*>;
@@ -293,12 +295,14 @@ DFANode* Parser::buildDFA(Node* startNode)
 					if (it != currentDFANode->GetNFANodes()->at(j)->getNodesMap()->end())
 					{
 						//nodes found so add it to current nodes vector
-						currentStates->insert(currentStates->end(), currentDFANode->GetNFANodes()->at(j)->getNodesMap()->find(inputs->at(i))->second->begin(), currentDFANode->GetNFANodes()->at(j)->getNodesMap()->find(inputs->at(i))->second->end());
+						currentStates->insert(currentStates->end(), it->second->begin(), it->second->end());
 					}
 				}
 
 				//get epsilon for all current states and add them to vector current states
-				currentStates->insert(currentStates->end(), EpsilonClosure(currentStates)->begin(), EpsilonClosure(currentStates)->end());
+				vector<Node*>* o = EpsilonClosure(currentStates);
+				if(!o->empty())
+					currentStates->insert(currentStates->end(), o->begin(), o->end());
 
 				//check if vector found in one of the DFA states add it to the map
 				DFANode* result = compareTwoVectors(currentStates, allDFAStates);
@@ -358,12 +362,39 @@ DFANode* Parser::compareTwoVectors(vector<Node*>* nodes, vector<DFANode*>* allDF
 
 vector<Node*>* Parser::EpsilonClosure(vector<Node*>* nodes)
 {
-	return NULL;
+	vector<Node*>* output = new vector<Node*>;
+	
+	for (int i = 0; i < nodes->size(); i++) {
+		vector<Node*>* e = EpsilonClosure(nodes->at(i));
+		if(!e->empty())
+			output->insert(output->end(), e->begin(), e->end());
+	}
+
+	return output;
 }
 
 vector<Node*>* Parser::EpsilonClosure(Node* node)
 {
-	return NULL;
+	vector<Node*>* output = new vector<Node*>;
+	vector<Node*>* queue = new vector<Node*>;
+	Node* test;
+
+	queue->push_back(node);
+
+	while(!queue->empty()) {
+		test = queue->at(0);
+		queue->erase(queue->begin());
+
+		if (!test->GetEpsilon()->empty()) {
+			queue->insert(queue->end(), test->GetEpsilon()->begin(), test->GetEpsilon()->end());
+			output->insert(output->end(), test->GetEpsilon()->begin(), test->GetEpsilon()->end());
+		}
+	}
+
+	queue->clear();
+	queue->shrink_to_fit();
+
+	return output;
 }
 
 /***************************************************************************************/
@@ -437,10 +468,9 @@ int main(int argc, char ** argv)
 	Traverse(A->GetStart());*/
 	//#4 Kleen this will cause stack overflow, but this means it works 
 	//due to repeate edge and optional edge 
-	NFA * A = Parser::CreateTransition("L");
+	/*NFA * A = Parser::CreateTransition("L");
 	NFA * B = Parser::CreateKleen(A);
-	Traverse(B->GetStart());
-
+	Traverse(B->GetStart());*/
 
 	char  c;
 	scanf("%c",&c);
