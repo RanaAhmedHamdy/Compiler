@@ -285,8 +285,6 @@ DFANode* Parser::buildDFA(Node* startNode)
 
 		while (!DFAStates->empty())
 		{
-			//cout << "DFA States size : " << DFAStates->size() << "\n";
-
 			//get first element in dfa nodes queue
 			DFANode* currentDFANode = DFAStates->front();
 			DFAStates->pop();
@@ -305,35 +303,32 @@ DFANode* Parser::buildDFA(Node* startNode)
 					if (it != currentDFANode->GetNFANodes()->at(j)->getNodesMap()->end())
 					{
 						//nodes found so add it to current nodes vector
-						cout << "Insert to current states\n";
 						currentStates->insert(currentStates->end(), it->second->begin(), it->second->end());
 					}
 				}
 
-				//get epsilon for all current states and add them to vector current states
+				//no need to add input to dfa state if to goes to phi 
 				if (!currentStates->empty()) {
+					//get epsilon for all current states and add them to vector current states
 					vector<Node*>* o = EpsilonClosure(currentStates);
 					if (!o->empty())
 						currentStates->insert(currentStates->end(), o->begin(), o->end());
-				}
 
-				//check if vector found in one of the DFA states add it to the map
-				DFANode* result = compareTwoVectors(currentStates, allDFAStates);
-				if ( result != NULL) {
-					cout << "Not NULL\n";
-					currentDFANode->getNodesMap()->emplace(inputs->at(i), result);
+					//check if vector found in one of the DFA states add it to the map
+					DFANode* result = compareTwoVectors(currentStates, allDFAStates);
+					if (result != NULL) {
+						currentDFANode->getNodesMap()->emplace(inputs->at(i), result);
+					}
+					else
+					{
+						//if not found create new DFA state add it to the map and add it to both DFASates and all DFAstates
+						DFANode* newNode = new DFANode;
+						newNode->GetNFANodes()->insert(newNode->GetNFANodes()->end(), currentStates->begin(), currentStates->end());
+						currentDFANode->getNodesMap()->emplace(inputs->at(i), newNode);
+						DFAStates->push(newNode);
+						allDFAStates->push_back(newNode);
+					}
 				}
-				else 
-				{
-					//cout << "NULL\n";
-					//if not found create new DFA state add it to the map and add it to both DFASates and all DFAstates
-					DFANode* newNode = new DFANode;
-					newNode->GetNFANodes()->insert(newNode->GetNFANodes()->end(), currentStates->begin(), currentStates->end());
-					currentDFANode->getNodesMap()->emplace(inputs->at(i), newNode);
-					DFAStates->push(newNode);
-					allDFAStates->push_back(newNode);
-				}
-
 				currentStates->clear();
 				currentStates->shrink_to_fit();
 			}
@@ -354,7 +349,6 @@ DFANode* Parser::compareTwoVectors(vector<Node*>* nodes, vector<DFANode*>* allDF
 			for (int j = 0; j < nodes->size(); j++) {
 				found = false;
 				for (int k = 0; k < NFAnodes->size(); k++) {
-					cout << NFAnodes->at(k) << "----------------" << nodes->at(j);
 					if (NFAnodes->at(k) == nodes->at(j)) {
 						found = true;
 						break;
@@ -366,7 +360,6 @@ DFANode* Parser::compareTwoVectors(vector<Node*>* nodes, vector<DFANode*>* allDF
 			}
 
 			if (found == true) {
-				cout << "found\n";
 				return allDFAStates->at(i);
 			}
 		}
@@ -401,14 +394,6 @@ vector<Node*>* Parser::EpsilonClosure(Node* node)
 
 	while(!queue->empty()) {
 		test = queue->at(0);
-
-		////////////////////////////////
-		/*cout << "In Epsilon function \n";
-		for (auto p : *test->getNodesMap())
-		{
-			cout << p.first << "\n";
-		}*/
-		//////////////////////////////////
 
 		queue->erase(queue->begin());
 
