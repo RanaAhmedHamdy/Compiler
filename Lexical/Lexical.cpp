@@ -126,7 +126,7 @@ NFA::~NFA()
 }
 /***********************************************************************************/
 Node* StartNode = new Node;
-
+map<string, Input*>* InputDefinitions = new map<string, Input*>;
 /**********************************************************************************/
 static class Utils
 {
@@ -151,7 +151,18 @@ vector<string> Utils::SplitString(string s, string delimiter)
 }
 
 /***************************************************************************************/
+class Input
+{
+	vector<pair<char, char>*>* Ranges = new vector<pair<char, char>*>;
+public:
+	Input();
+	~Input();
+	bool Belongs(char A);
+	void AddRange(char From, char To);
+};
 
+
+/**************************************************************************************/
 static class Parser
 {
 public:
@@ -339,6 +350,28 @@ int main(int argc, char ** argv)
 	return 0;
 }
 
+Input::Input()
+{
+}
 
+Input::~Input()
+{
+}
 
+bool Input::Belongs(char A)
+{
+	for (int i = 0; i < Ranges->size(); i++)
+	{
+		if (A >= Ranges->at(i)->first && A <= Ranges->at(i)->second)
+			return true;
+	}
+	return false;
+}
 
+void Input::AddRange(char From, char To)
+{
+	pair<char, char>* X = new pair<char, char>;
+	X->first = From;
+	X->second = To;
+	Ranges->push_back(X);
+}
