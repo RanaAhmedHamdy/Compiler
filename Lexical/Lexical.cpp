@@ -5,36 +5,12 @@
 #include <sstream>
 #include <iterator>
 #include <iostream>
+#include <queue>
+
 using namespace std;
 
 enum NODE_TYPE { START, ACCEPTANCE, NODE };
-/*************************************************************************/
-class DFANode
-{
-	private:
-		NODE_TYPE type;
-		string value;
-		map<string, DFANode*>* nodesMap = new map<string, DFANode*>;
 
-	public:
-		DFANode();
-		~DFANode();
-
-		map<string, DFANode*>* getNodesMap() { return nodesMap; }
-		NODE_TYPE getNodeType() { return type; }
-		string getValue() { return value; }
-
-		void setType(NODE_TYPE type) { this->type = type; }
-		void setValue(string value) { this->value = value; }
-};
-
-DFANode::DFANode()
-{
-}
-
-DFANode::~DFANode()
-{
-}
 /*************************************************************************/
 class Node {
 
@@ -100,6 +76,36 @@ Node::Node()
 }
 
 Node::~Node()
+{
+}
+
+/*************************************************************************/
+class DFANode
+{
+private:
+	NODE_TYPE type;
+	string value;
+	map<string, DFANode*>* nodesMap = new map<string, DFANode*>;
+	vector<Node*>* NFANodes = new vector<Node*>;
+
+public:
+	DFANode();
+	~DFANode();
+
+	map<string, DFANode*>* getNodesMap() { return nodesMap; }
+	NODE_TYPE getNodeType() { return type; }
+	string getValue() { return value; }
+	vector<Node*>* GetNFANodes() { return NFANodes; }
+
+	void setType(NODE_TYPE type) { this->type = type; }
+	void setValue(string value) { this->value = value; }
+};
+
+DFANode::DFANode()
+{
+}
+
+DFANode::~DFANode()
 {
 }
 
@@ -172,6 +178,10 @@ public:
 	static NFA* CreateConcatition(vector<NFA*>* NFACollection);
 	static NFA* CreateKleen(NFA* nfa);
 	static DFANode* buildDFA(Node* startnode);
+	static DFANode* compareTwoVectors(vector<Node*>* nodes, vector<DFANode*>* allDFAStates);
+	static vector<Node*>* EpsilonClosure(vector<Node*>* nodes);
+	static vector<Node*>* EpsilonClosure(Node* node);
+	static vector<string>* getInputs(DFANode* node);
 };
 
 void Parser::buildNFAwithEpsilon(vector<string> tokens) {
@@ -250,23 +260,180 @@ NFA * Parser::CreateKleen(NFA * nfa)
 
 DFANode* Parser::buildDFA(Node* startNode)
 {
-	DFANode* copy = NULL;
+	DFANode* startDFANode = NULL;
+	
 	if (startNode)
 	{
-		copy = new DFANode;
-		copy->setType(startNode->getNodeType());
-		copy->setValue(startNode->getValue());
-		for (auto p : *startNode->getNodesMap())
+		//create dfa start node
+		startDFANode = new DFANode;
+		startDFANode->setType(startNode->getNodeType());
+		startDFANode->setValue(startNode->getValue());
+
+		//get all nodes with epsilon from start node
+		//add them to nodes vector in start node
+		vector<Node*>* epsilonNodes = EpsilonClosure(startNode);
+		
+		if(!epsilonNodes->empty())
+			startDFANode->GetNFANodes()->insert(startDFANode->GetNFANodes()->end(), epsilonNodes->begin(), epsilonNodes->end());
+
+		//queue for dfa states
+		queue<DFANode*>* DFAStates = new queue<DFANode*>;
+
+		//all inputs
+		vector<string>* inputs = new vector<string>;
+
+		//all dfa states
+		vector<DFANode*>* allDFAStates = new vector<DFANode*>;
+
+		//put start node in nodes queue
+		DFAStates->push(startDFANode);
+		allDFAStates->push_back(startDFANode);
+
+		while (!DFAStates->empty())
 		{
-			cout << p.first << "\n";
-			for (int i = 0; i < p.second->size(); i++)
-			{
-				copy->getNodesMap()->emplace(p.first, buildDFA(p.second->at(i)));
+			//get first element in dfa nodes queue
+			DFANode* currentDFANode = DFAStates->front();
+			DFAStates->pop();
+
+			inputs = getInputs(currentDFANode);
+
+			//loop through all inputs
+			for (int i = 0; i < inputs->size(); i++) {
+				vector<Node*>* currentStates = new vector<Node*>;
+
+				//get all nodes reached by inputs[i] from nfa nodes of the current dfa state
+				for (int j = 0; j < currentDFANode->GetNFANodes()->size(); j++) {
+
+					map<string, vector<Node*>*> ::iterator it;
+					it = currentDFANode->GetNFANodes()->at(j)->getNodesMap()->find(inputs->at(i));
+					
+					//check if there is node can be reached by this input
+					if (it != currentDFANode->GetNFANodes()->at(j)->getNodesMap()->end())
+					{
+						//nodes found so add it to current nodes vector
+						currentStates->insert(currentStates->end(), it->second->begin(), it->second->end());
+					}
+				}
+
+				//no need to add input to dfa state if to goes to phi 
+				if (!currentStates->empty()) {
+					//get epsilon for all current states and add them to vector current states
+					vector<Node*>* o = EpsilonClosure(currentStates);
+					if (!o->empty())
+						currentStates->insert(currentStates->end(), o->begin(), o->end());
+
+					//check if vector found in one of the DFA states add it to the map
+					DFANode* result = compareTwoVectors(currentStates, allDFAStates);
+					if (result != NULL) {
+						currentDFANode->getNodesMap()->emplace(inputs->at(i), result);
+					}
+					else
+					{
+						//if not found create new DFA state add it to the map and add it to both DFASates and all DFAstates
+						DFANode* newNode = new DFANode;
+						newNode->GetNFANodes()->insert(newNode->GetNFANodes()->end(), currentStates->begin(), currentStates->end());
+						currentDFANode->getNodesMap()->emplace(inputs->at(i), newNode);
+						DFAStates->push(newNode);
+						allDFAStates->push_back(newNode);
+					}
+				}
+				currentStates->clear();
+				currentStates->shrink_to_fit();
 			}
-			cout << "***********************" << "\n";
 		}
 	}
-	return copy;
+	return startDFANode;
+}
+
+DFANode* Parser::compareTwoVectors(vector<Node*>* nodes, vector<DFANode*>* allDFAStates)
+{
+	for(int i = 0; i < allDFAStates->size(); i++) {
+
+		vector<Node*>* NFAnodes = new vector<Node*>;
+		NFAnodes->insert(NFAnodes->end(), allDFAStates->at(i)->GetNFANodes()->begin(), allDFAStates->at(i)->GetNFANodes()->end());
+		
+		bool found = false;
+		if (nodes->size() == NFAnodes->size()) {
+			for (int j = 0; j < nodes->size(); j++) {
+				found = false;
+				for (int k = 0; k < NFAnodes->size(); k++) {
+					if (NFAnodes->at(k) == nodes->at(j)) {
+						found = true;
+						break;
+					}
+				}
+
+				if (found == false)
+					break;
+			}
+
+			if (found == true) {
+				return allDFAStates->at(i);
+			}
+		}
+
+		NFAnodes->clear();
+		NFAnodes->shrink_to_fit();
+	}
+
+	return NULL;
+}
+
+vector<Node*>* Parser::EpsilonClosure(vector<Node*>* nodes)
+{
+	vector<Node*>* output = new vector<Node*>;
+	
+	for (int i = 0; i < nodes->size(); i++) {
+		vector<Node*>* e = EpsilonClosure(nodes->at(i));
+		if(!e->empty())
+			output->insert(output->end(), e->begin(), e->end());
+	}
+
+	return output;
+}
+
+vector<Node*>* Parser::EpsilonClosure(Node* node)
+{
+	vector<Node*>* output = new vector<Node*>;
+	vector<Node*>* queue = new vector<Node*>;
+	Node* test;
+
+	queue->push_back(node);
+
+	while(!queue->empty()) {
+		test = queue->at(0);
+
+		queue->erase(queue->begin());
+
+		if (!test->GetEpsilon()->empty()) {
+			queue->insert(queue->end(), test->GetEpsilon()->begin(), test->GetEpsilon()->end());
+			output->insert(output->end(), test->GetEpsilon()->begin(), test->GetEpsilon()->end());
+		}
+	}
+
+	queue->clear();
+	queue->shrink_to_fit();
+
+	return output;
+}
+
+vector<string>* Parser::getInputs(DFANode* node)
+{
+	vector<Node*>* t = node->GetNFANodes();
+	vector<string>* output = new vector<string>;
+
+	for (int i = 0; i < t->size(); i++) {
+		for (auto p : *t->at(i)->getNodesMap())
+		{
+			if (find(output->begin(), output->end(), p.first) == output->end())
+			{
+				// Element not in vector.
+				output->push_back(p.first);
+			}
+		}
+	}
+
+	return output;
 }
 
 /***************************************************************************************/
@@ -329,7 +496,7 @@ int main(int argc, char ** argv)
 	NFA * A = Parser::CreateConcatition(&K);
 	Traverse(A->GetStart());*/
 	//#3 Union
-	/*string X = "else";
+	string X = "else";
 	vector<NFA *> K;
 	for (int i = 0; i < X.length(); i++)
 	{
@@ -337,13 +504,15 @@ int main(int argc, char ** argv)
 		K.push_back(Parser::CreateTransition(l));
 	}
 	NFA * A = Parser::CreateUnion(&K);
-	Traverse(A->GetStart());*/
+	//Traverse(A->GetStart());
+	//Parser::EpsilonClosure(A->GetStart());
+	Parser::buildDFA(A->GetStart());
+
 	//#4 Kleen this will cause stack overflow, but this means it works 
 	//due to repeate edge and optional edge 
-	NFA * A = Parser::CreateTransition("L");
+	/*NFA * A = Parser::CreateTransition("L");
 	NFA * B = Parser::CreateKleen(A);
-	Traverse(B->GetStart());
-
+	Traverse(B->GetStart());*/
 
 	char  c;
 	scanf("%c",&c);
