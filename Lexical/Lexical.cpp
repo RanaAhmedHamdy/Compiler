@@ -170,6 +170,7 @@ public:
 	static DFANode* compareTwoVectors(vector<Node*>* nodes, vector<DFANode*>* allDFAStates);
 	static vector<Node*>* EpsilonClosure(vector<Node*>* nodes);
 	static vector<Node*>* EpsilonClosure(Node* node);
+	static vector<string>* getInputs(DFANode* node);
 };
 
 void Parser::buildNFAwithEpsilon(vector<string> tokens) {
@@ -270,12 +271,6 @@ DFANode* Parser::buildDFA(Node* startNode)
 		//all inputs
 		vector<string>* inputs = new vector<string>;
 
-		/********************test**********************/
-		inputs->push_back("e");
-		inputs->push_back("l");
-		inputs->push_back("s");
-		/**********************************************/
-
 		//all dfa states
 		vector<DFANode*>* allDFAStates = new vector<DFANode*>;
 
@@ -288,6 +283,8 @@ DFANode* Parser::buildDFA(Node* startNode)
 			//get first element in dfa nodes queue
 			DFANode* currentDFANode = DFAStates->front();
 			DFAStates->pop();
+
+			inputs = getInputs(currentDFANode);
 
 			//loop through all inputs
 			for (int i = 0; i < inputs->size(); i++) {
@@ -409,6 +406,25 @@ vector<Node*>* Parser::EpsilonClosure(Node* node)
 	return output;
 }
 
+vector<string>* Parser::getInputs(DFANode* node)
+{
+	vector<Node*>* t = node->GetNFANodes();
+	vector<string>* output = new vector<string>;
+
+	for (int i = 0; i < t->size(); i++) {
+		for (auto p : *t->at(i)->getNodesMap())
+		{
+			if (find(output->begin(), output->end(), p.first) == output->end())
+			{
+				// Element not in vector.
+				output->push_back(p.first);
+			}
+		}
+	}
+
+	return output;
+}
+
 /***************************************************************************************/
 void Traverse(Node * n)
 {
@@ -479,7 +495,7 @@ int main(int argc, char ** argv)
 	NFA * A = Parser::CreateUnion(&K);
 	//Traverse(A->GetStart());
 	//Parser::EpsilonClosure(A->GetStart());
-	//Parser::buildDFA(A->GetStart());
+	Parser::buildDFA(A->GetStart());
 
 	//#4 Kleen this will cause stack overflow, but this means it works 
 	//due to repeate edge and optional edge 
