@@ -132,7 +132,7 @@ NFA::~NFA()
 }
 /***********************************************************************************/
 Node* StartNode = new Node;
-map<string, Input*>* InputDefinitions = new map<string, Input*>;
+//map<string, Input*>* InputDefinitions = new map<string, Input*>;
 /**********************************************************************************/
 static class Utils
 {
@@ -165,6 +165,7 @@ public:
 	~Input();
 	bool Belongs(char A);
 	void AddRange(char From, char To);
+	void Remove(char ToBeRemoved);
 };
 
 
@@ -496,23 +497,32 @@ int main(int argc, char ** argv)
 	NFA * A = Parser::CreateConcatition(&K);
 	Traverse(A->GetStart());*/
 	//#3 Union
-	string X = "else";
-	vector<NFA *> K;
-	for (int i = 0; i < X.length(); i++)
-	{
-		string l(1, X[i]);
-		K.push_back(Parser::CreateTransition(l));
-	}
-	NFA * A = Parser::CreateUnion(&K);
-	//Traverse(A->GetStart());
-	//Parser::EpsilonClosure(A->GetStart());
-	Parser::buildDFA(A->GetStart());
+	//string X = "else";
+	//vector<NFA *> K;
+	//for (int i = 0; i < X.length(); i++)
+	//{
+	//	string l(1, X[i]);
+	//	K.push_back(Parser::CreateTransition(l));
+	//}
+	//NFA * A = Parser::CreateUnion(&K);
+	////Traverse(A->GetStart());
+	////Parser::EpsilonClosure(A->GetStart());
+	//Parser::buildDFA(A->GetStart());
 
 	//#4 Kleen this will cause stack overflow, but this means it works 
 	//due to repeate edge and optional edge 
 	/*NFA * A = Parser::CreateTransition("L");
 	NFA * B = Parser::CreateKleen(A);
 	Traverse(B->GetStart());*/
+
+	Input * I = new Input;
+	
+	I->AddRange('A', 'Z');
+	I->AddRange('z', 'a');
+	
+	cout << I->Belongs('a') << "\n" << I->Belongs('K') << I->Belongs('Z') << I->Belongs('C') << "\n";
+	I->Remove('k');
+	cout << I->Belongs('k' - 1) << "\n" << I->Belongs('k') << I->Belongs('k' + 1) << I->Belongs('C') << I->Belongs('Y') << "\n";
 
 	char  c;
 	scanf("%c",&c);
@@ -531,7 +541,10 @@ bool Input::Belongs(char A)
 {
 	for (int i = 0; i < Ranges->size(); i++)
 	{
-		if (A >= Ranges->at(i)->first && A <= Ranges->at(i)->second)
+		char First = Ranges->at(i)->first;
+		char Second = Ranges->at(i)->second;
+		bool L = (A >= First) && (A <= Second);
+		if (L)
 			return true;
 	}
 	return false;
@@ -540,7 +553,52 @@ bool Input::Belongs(char A)
 void Input::AddRange(char From, char To)
 {
 	pair<char, char>* X = new pair<char, char>;
-	X->first = From;
-	X->second = To;
+	if (To >= From)
+	{
+		X->first = From;
+		X->second = To;
+	}
+	else
+	{
+		X->first = To;
+		X->second = From;
+	}
 	Ranges->push_back(X);
+}
+
+void Input::Remove(char ToBeRemoved)
+{
+	for (int i = 0; i < Ranges->size(); i++)
+	{
+		if (ToBeRemoved > Ranges->at(i)->first && ToBeRemoved < Ranges->at(i)->second)
+		{
+			pair<char, char>* X = new pair<char, char>;
+			X->first = ToBeRemoved + 1;
+			X->second = Ranges->at(i)->second;
+			Ranges->push_back(X);
+
+			Ranges->at(i)->second = ToBeRemoved - 1;
+			break;
+		}
+		else if (ToBeRemoved == Ranges->at(i)->first)
+		{
+			if (ToBeRemoved + 1 <= Ranges->at(i)->second)
+				Ranges->at(i)->first = ToBeRemoved + 1;
+			else
+				Ranges->erase(Ranges->begin()+ i);
+			break;
+		}
+		else if (ToBeRemoved == Ranges->at(i)->second)
+		{
+			if (ToBeRemoved - 1 >= Ranges->at(i)->first)
+				Ranges->at(i)->second = ToBeRemoved - 1;
+			//else clause should be unreachable, however it's here in case
+			//the processor decided to execute the if clauses in a 
+			//random order :D
+			else
+				Ranges->erase(Ranges->begin() + i);
+			break;
+		}
+
+	}
 }
