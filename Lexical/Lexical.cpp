@@ -158,7 +158,7 @@ NFA::~NFA()
 Node* StartNode = new Node;
 map<string, Input*>* InputDefinitions = new map<string, Input*>;
 /**********************************************************************************/
-static class Utils
+class Utils
 {
 public:
 	static vector<string> SplitString(string s, string delm);
@@ -181,7 +181,7 @@ vector<string> Utils::SplitString(string s, string delimiter)
 }
 
 /***************************************************************************************/
-static class Parser
+class Parser
 {
 public:
 	static void buildNFAwithEpsilon(vector<string> tokens);
@@ -240,7 +240,7 @@ NFA * Parser::CreateTransition(Input * Input)
 NFA * Parser::CreateUnion(vector<NFA*>* NFACollection)
 {
 	NFA* X = new NFA;
-	for (int i = 0; i < NFACollection->size(); i++)
+	for (size_t i = 0; i < NFACollection->size(); i++)
 	{
 		X->GetStart()->GetEpsilon()->push_back(NFACollection->at(i)->GetStart());
 		NFACollection->at(i)->GetEnd()->GetEpsilon()->push_back(X->GetEnd());
@@ -253,7 +253,7 @@ NFA * Parser::CreateConcatition(vector<NFA*>* NFACollection)
 {
 	NFA * X = new NFA;
 	X->GetStart()->GetEpsilon()->push_back(NFACollection->at(0)->GetStart());
-	for (int i = 0; i < NFACollection->size() - 1; i++)
+	for (size_t i = 0; i < NFACollection->size() - 1; i++)
 	{
 		NFACollection->at(i)->GetEnd()->GetEpsilon()->push_back(NFACollection->at(i + 1)->GetStart());
 		NFACollection->at(i)->GetEnd()->setType(NODE_TYPE::NODE);
@@ -313,11 +313,11 @@ DFANode* Parser::buildDFA(Node* startNode)
 			inputs = getInputs(currentDFANode);
 
 			//loop through all inputs
-			for (int i = 0; i < inputs->size(); i++) {
+			for (size_t i = 0; i < inputs->size(); i++) {
 				vector<Node*>* currentStates = new vector<Node*>;
 
 				//get all nodes reached by inputs[i] from nfa nodes of the current dfa state
-				for (int j = 0; j < currentDFANode->GetNFANodes()->size(); j++) {
+				for (size_t j = 0; j < currentDFANode->GetNFANodes()->size(); j++) {
 
 					/*map<Input*, vector<Node*>*> ::iterator it;
 					it = currentDFANode->GetNFANodes()->at(j)->getNodesMap()->find(inputs->at(i));
@@ -371,7 +371,7 @@ void SetDFANodeType(DFANode* node)
 {
 	vector<Node*>* NFANodes = node->GetNFANodes();
 
-	for (int i = 0; i < NFANodes->size(); i++) {
+	for (size_t i = 0; i < NFANodes->size(); i++) {
 		if (NFANodes->at(i)->getNodeType() == ACCEPTANCE) {
 			node->setType(ACCEPTANCE);
 			node->getValues()->push_back(NFANodes->at(i)->getValue());
@@ -396,16 +396,16 @@ vector<Node*>* Parser::GetNodesForInput(Input* input, Node* node)
 
 DFANode* Parser::compareTwoVectors(vector<Node*>* nodes, vector<DFANode*>* allDFAStates)
 {
-	for(int i = 0; i < allDFAStates->size(); i++) {
+	for(size_t i = 0; i < allDFAStates->size(); i++) {
 
 		vector<Node*>* NFAnodes = new vector<Node*>;
 		NFAnodes->insert(NFAnodes->end(), allDFAStates->at(i)->GetNFANodes()->begin(), allDFAStates->at(i)->GetNFANodes()->end());
 		
 		bool found = false;
 		if (nodes->size() == NFAnodes->size()) {
-			for (int j = 0; j < nodes->size(); j++) {
+			for (size_t j = 0; j < nodes->size(); j++) {
 				found = false;
-				for (int k = 0; k < NFAnodes->size(); k++) {
+				for (size_t k = 0; k < NFAnodes->size(); k++) {
 					if (NFAnodes->at(k) == nodes->at(j)) {
 						found = true;
 						break;
@@ -432,7 +432,7 @@ vector<Node*>* Parser::EpsilonClosure(vector<Node*>* nodes)
 {
 	vector<Node*>* output = new vector<Node*>;
 	
-	for (int i = 0; i < nodes->size(); i++) {
+	for (size_t i = 0; i < nodes->size(); i++) {
 		vector<Node*>* e = EpsilonClosure(nodes->at(i));
 		if(!e->empty())
 			output->insert(output->end(), e->begin(), e->end());
@@ -471,7 +471,7 @@ vector<Input*>* Parser::getInputs(DFANode* node)
 	vector<Node*>* t = node->GetNFANodes();
 	vector<Input*>* output = new vector<Input*>;
 
-	for (int i = 0; i < t->size(); i++) {
+	for (size_t i = 0; i < t->size(); i++) {
 		for (auto p : *t->at(i)->getNodesMap())
 		{
 			if (find(output->begin(), output->end(), p.first) == output->end())
@@ -497,7 +497,7 @@ void Traverse(Node * n)
 			for (auto p : *n->getNodesMap())
 			{
 
-				for (int i = 0; i < p.second->size(); i++)
+				for (size_t i = 0; i < p.second->size(); i++)
 				{
 					cout << "go from "<< n<< " to " << p.second->at(i)<< " on " << p.first->GetName() << "\n";
 					Traverse(p.second->at(i));
@@ -564,9 +564,9 @@ Input::~Input()
 
 pair<char, char>* Input::Belongs(Input * A)
 {
-	for (int i = 0; i < Ranges->size(); i++)
+	for (size_t i = 0; i < Ranges->size(); i++)
 	{
-		for (int j = 0; j < A->GetRanges()->size(); j++)
+		for (size_t j = 0; j < A->GetRanges()->size(); j++)
 		{
 			pair<char, char>* X = A->GetRanges()->at(j);
 			char First = Ranges->at(i)->first;
@@ -598,7 +598,7 @@ void Input::AddRange(char From, char To)
 
 void Input::Remove(pair<char, char>* ToBeRemoved)
 {
-	for (int i = 0; i < Ranges->size(); i++)
+	for (size_t i = 0; i < Ranges->size(); i++)
 	{
 		//make sure it belongs to the current range
 		if (ToBeRemoved->first >= Ranges->at(i)->first && ToBeRemoved->second <= Ranges->at(i)->second)
