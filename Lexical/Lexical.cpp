@@ -50,9 +50,11 @@ public:
 	void AddTransition(Input * Character, Node* LocalStart);
 	NODE_TYPE getNodeType() { return type; }
 	string getValue() { return value; }
+	string getLexeme() { return Lexeme; }
 
 	void setType(NODE_TYPE type) { this->type = type; }
 	void setValue(string value) { this->value = value; }
+	void setLexeme(string lexeme) { this->Lexeme = lexeme; }
 };
 
 vector<Node*>* Node::next(Input * input)
@@ -104,7 +106,8 @@ class DFANode
 {
 private:
 	NODE_TYPE type;
-	string value;
+	vector<string>* values = new vector<string>;
+	vector<string>* lexemes = new vector<string>;
 	map<Input*, DFANode*>* nodesMap = new map<Input*, DFANode*>;
 	vector<Node*>* NFANodes = new vector<Node*>;
 
@@ -114,11 +117,11 @@ public:
 
 	map<Input*, DFANode*>* getNodesMap() { return nodesMap; }
 	NODE_TYPE getNodeType() { return type; }
-	string getValue() { return value; }
+	vector<string>* getValues() { return values; }
+	vector<string>* getLexemes() { return lexemes; }
 	vector<Node*>* GetNFANodes() { return NFANodes; }
 
 	void setType(NODE_TYPE type) { this->type = type; }
-	void setValue(string value) { this->value = value; }
 };
 
 DFANode::DFANode()
@@ -191,6 +194,7 @@ public:
 	static vector<Node*>* EpsilonClosure(Node* node);
 	static vector<Input*>* getInputs(DFANode* node);
 	static vector<Node*>* GetNodesForInput(Input* input, Node* node);
+	static void SetDFANodeType(DFANode* node);
 };
 
 void Parser::buildNFAwithEpsilon(vector<string> tokens) {
@@ -278,7 +282,6 @@ DFANode* Parser::buildDFA(Node* startNode)
 		//create dfa start node
 		startDFANode = new DFANode;
 		startDFANode->setType(startNode->getNodeType());
-		startDFANode->setValue(startNode->getValue());
 
 		//get all nodes with epsilon from start node
 		//add them to nodes vector in start node
@@ -350,6 +353,9 @@ DFANode* Parser::buildDFA(Node* startNode)
 						currentDFANode->getNodesMap()->emplace(inputs->at(i), newNode);
 						DFAStates->push(newNode);
 						allDFAStates->push_back(newNode);
+
+						//set type of dfanode if acceptance and add lexemes and values
+						SetDFANodeType(newNode);
 					}
 				}
 				currentStates->clear();
@@ -358,6 +364,19 @@ DFANode* Parser::buildDFA(Node* startNode)
 		}
 	}
 	return startDFANode;
+}
+
+void SetDFANodeType(DFANode* node)
+{
+	vector<Node*>* NFANodes = node->GetNFANodes();
+
+	for (int i = 0; i < NFANodes->size(); i++) {
+		if (NFANodes->at(i)->getNodeType() == ACCEPTANCE) {
+			node->setType(ACCEPTANCE);
+			node->getValues()->push_back(NFANodes->at(i)->getValue());
+			node->getLexemes()->push_back(NFANodes->at(i)->getLexeme());
+		}
+	}
 }
 
 vector<Node*>* Parser::GetNodesForInput(Input* input, Node* node)
