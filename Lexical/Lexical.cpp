@@ -367,7 +367,7 @@ DFANode* Parser::buildDFA(Node* startNode)
 	return startDFANode;
 }
 
-void SetDFANodeType(DFANode* node)
+void Parser::SetDFANodeType(DFANode* node)
 {
 	vector<Node*>* NFANodes = node->GetNFANodes();
 
