@@ -319,15 +319,6 @@ DFANode* Parser::buildDFA(Node* startNode)
 				//get all nodes reached by inputs[i] from nfa nodes of the current dfa state
 				for (size_t j = 0; j < currentDFANode->GetNFANodes()->size(); j++) {
 
-					/*map<Input*, vector<Node*>*> ::iterator it;
-					it = currentDFANode->GetNFANodes()->at(j)->getNodesMap()->find(inputs->at(i));
-					
-					//check if there is node can be reached by this input
-					if (it != currentDFANode->GetNFANodes()->at(j)->getNodesMap()->end())
-					{
-						//nodes found so add it to current nodes vector
-						currentStates->insert(currentStates->end(), it->second->begin(), it->second->end());
-					}*/
 					vector<Node*>* R = GetNodesForInput(inputs->at(i), currentDFANode->GetNFANodes()->at(j));
 					if (!R->empty()) {
 						currentStates->insert(currentStates->end(), R->begin(), R->end());
@@ -343,6 +334,15 @@ DFANode* Parser::buildDFA(Node* startNode)
 
 					//check if vector found in one of the DFA states add it to the map
 					DFANode* result = compareTwoVectors(currentStates, allDFAStates);
+
+					//compare input with all current inputs and remove common
+					/*************************************************/
+					for (int l = 0; l < inputs->size(); l++) {
+						pair<char, char>* p = inputs->at(i)->Belongs(inputs->at(l));
+						if (p)
+							inputs->at(i)->Remove(p);
+					}
+					/*************************************************/
 					if (result != NULL) {
 						currentDFANode->getNodesMap()->emplace(inputs->at(i), result);
 					}
@@ -518,7 +518,7 @@ void TraverseDFA(DFANode * n)
 	{
 		for (auto p : *n->getNodesMap())
 		{
-			cout << p.first << "\n";
+			cout << p.first->GetName() << "\n";
 			TraverseDFA(p.second);
 		}
 		cout << "===================================" << "\n";
@@ -549,6 +549,7 @@ int main(int argc, char ** argv)
 	dl2->push_back(DAndL);
 	DAndL = Parser::CreateConcatition(dl2);
 	Traverse(DAndL->GetStart());
+	TraverseDFA(Parser::buildDFA(DAndL->GetStart()));
 	char  c;
 	scanf("%c", &c);
 	return 0;
