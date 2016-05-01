@@ -22,9 +22,10 @@ class Input
 public:
 	Input();
 	~Input();
-	bool Belongs(char A);
+	vector<pair<char, char>*>* GetRanges() { return Ranges; }
+	pair<char, char>* Belongs(Input* A);
 	void AddRange(char From, char To);
-	void Remove(char ToBeRemoved);
+	void Remove(pair<char, char>* ToBeRemoved);
 	void SetName(string Name) { this->Name = Name; }
 	string GetName() { return this->Name; }
 };
@@ -561,17 +562,22 @@ Input::~Input()
 {
 }
 
-bool Input::Belongs(char A)
+pair<char, char>* Input::Belongs(Input * A)
 {
 	for (int i = 0; i < Ranges->size(); i++)
 	{
-		char First = Ranges->at(i)->first;
-		char Second = Ranges->at(i)->second;
-		bool L = (A >= First) && (A <= Second);
-		if (L)
-			return true;
+		for (int j = 0; j < A->GetRanges()->size(); j++)
+		{
+			pair<char, char>* X = A->GetRanges()->at(j);
+			char First = Ranges->at(i)->first;
+			char Second = Ranges->at(i)->second;
+			bool L = (X->first >= First) && (X->second <= Second);
+			if (L)
+				return Ranges->at(i);
+		}
+		
 	}
-	return false;
+	return NULL;
 }
 
 void Input::AddRange(char From, char To)
@@ -590,39 +596,40 @@ void Input::AddRange(char From, char To)
 	Ranges->push_back(X);
 }
 
-void Input::Remove(char ToBeRemoved)
+void Input::Remove(pair<char, char>* ToBeRemoved)
 {
 	for (int i = 0; i < Ranges->size(); i++)
 	{
-		if (ToBeRemoved > Ranges->at(i)->first && ToBeRemoved < Ranges->at(i)->second)
+		//make sure it belongs to the current range
+		if (ToBeRemoved->first >= Ranges->at(i)->first && ToBeRemoved->second <= Ranges->at(i)->second)
 		{
-			pair<char, char>* X = new pair<char, char>;
-			X->first = ToBeRemoved + 1;
-			X->second = Ranges->at(i)->second;
-			Ranges->push_back(X);
-
-			Ranges->at(i)->second = ToBeRemoved - 1;
-			break;
-		}
-		else if (ToBeRemoved == Ranges->at(i)->first)
-		{
-			if (ToBeRemoved + 1 <= Ranges->at(i)->second)
-				Ranges->at(i)->first = ToBeRemoved + 1;
-			else
+			//====================
+			//********************
+			//                    
+			if (ToBeRemoved->first == Ranges->at(i)->first && ToBeRemoved->second == Ranges->at(i)->second)
 				Ranges->erase(Ranges->begin() + i);
-			break;
-		}
-		else if (ToBeRemoved == Ranges->at(i)->second)
-		{
-			if (ToBeRemoved - 1 >= Ranges->at(i)->first)
-				Ranges->at(i)->second = ToBeRemoved - 1;
-			//else clause should be unreachable, however it's here in case
-			//the processor decided to execute the if clauses in a 
-			//random order :D
+			//====================
+			//******
+			//      ++++++++++++++
+			else if (ToBeRemoved->first == Ranges->at(i)->first)
+				Ranges->at(i)->first = ToBeRemoved->second + 1;
+			//====================
+			//              ******
+			//++++++++++++++
+			else if (ToBeRemoved->second == Ranges->at(i)->second)
+				Ranges->at(i)->second = ToBeRemoved->first;
+			//====================
+			//       *******
+			//+++++++       ++++++
 			else
-				Ranges->erase(Ranges->begin() + i);
+			{
+				pair<char, char>* X = new pair<char, char>;
+				X->first = ToBeRemoved->second + 1;
+				X->second = Ranges->at(i)->second;
+				Ranges->push_back(X);
+				Ranges->at(i)->second = ToBeRemoved->first - 1;
+			}
 			break;
 		}
-
 	}
 }
