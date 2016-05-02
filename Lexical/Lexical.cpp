@@ -4,9 +4,11 @@
 #include <vector>
 #include <set>
 #include <sstream>
+#include <fstream>
 #include <iterator>
 #include <iostream>
 #include <queue>
+#include <stack>
 
 using namespace std;
 
@@ -24,6 +26,7 @@ public:
 	~Input();
 	vector<pair<char, char>*>* GetRanges() { return Ranges; }
 	pair<char, char>* Belongs(Input* A);
+	bool Belongs(char A);
 	void AddRange(char From, char To);
 	void Remove(pair<char, char>* ToBeRemoved);
 	void SetName(string Name) { this->Name = Name; }
@@ -162,8 +165,24 @@ class Utils
 {
 public:
 	static vector<string> SplitString(string s, string delm);
+	static string ReadFile(string s);
 
 };
+
+string Utils::ReadFile(string s)
+{
+	ifstream file(s);
+	string str;
+	string file_contents;
+	while (getline(file, str))
+	{
+		file_contents += str;
+		//file_contents.push_back('\n');
+	}
+	file_contents.erase(remove_if(file_contents.begin(), file_contents.end(), isspace), file_contents.end());
+
+	return file_contents;
+}
 
 vector<string> Utils::SplitString(string s, string delimiter)
 {
@@ -196,7 +215,71 @@ public:
 	static vector<Input*>* getInputs(DFANode* node);
 	static vector<Node*>* GetNodesForInput(Input* input, Node* node);
 	static void SetDFANodeType(DFANode* node);
+	static void CodeParser(DFANode* start, string file);
 };
+
+void Parser::CodeParser(DFANode* start, string file)
+{
+	queue<DFANode*>* DFAStatesQueue = new queue<DFANode*>;
+	stack<DFANode*>* DFAStatesStack = new stack<DFANode*>;
+	vector<string>* tokens = new vector<string>;
+	DFANode* current = new DFANode;
+
+	DFAStatesQueue->push(start);
+	DFAStatesStack->push(start);
+
+	int i = 0;
+	string token = "";
+
+	//convert file string into inputs
+	vector<Input*>* inputs = new vector<Input*>;
+
+	while (!DFAStatesQueue->empty() && i < file.length())
+	{
+		current = DFAStatesQueue->front();
+		DFAStatesQueue->pop();
+		
+		bool found = false;
+		for (auto p : *current->getNodesMap())
+		{
+			if (p.first->Belongs(file.at(i))) {
+				current = p.second;
+				found = true;
+			}
+		}
+
+		if (found) {
+			DFAStatesQueue->push(current);
+			DFAStatesStack->push(current);
+
+			token = token + file.at(i);
+			i++;
+		}
+		else {
+			DFANode* check = DFAStatesStack->top();
+			DFAStatesStack->pop();
+
+			while (check->getNodeType() != ACCEPTANCE) {
+				token.pop_back();
+				i--;
+				check = DFAStatesStack->top();
+				DFAStatesStack->pop();
+			}
+
+			//if last node in stack is acceptance
+			cout << token << "\n";
+			tokens->push_back(token);
+			token = "";
+			
+			while (!DFAStatesQueue->empty()) DFAStatesQueue->pop();
+			while (!DFAStatesStack->empty()) DFAStatesStack->pop();
+
+			current = start;
+			DFAStatesQueue->push(start);
+			DFAStatesStack->push(start);
+		}
+	}
+}
 
 void Parser::buildNFAwithEpsilon(vector<string> tokens) {
 	/*Node * PreNode;
@@ -550,6 +633,9 @@ int main(int argc, char ** argv)
 	DAndL = Parser::CreateConcatition(dl2);
 	Traverse(DAndL->GetStart());
 	TraverseDFA(Parser::buildDFA(DAndL->GetStart()));
+
+	/*****************************************************/
+	cout << Utils::ReadFile("C:\\Users\\Rana\\Desktop\\code.txt");
 	char  c;
 	scanf("%c", &c);
 	return 0;
@@ -579,6 +665,19 @@ pair<char, char>* Input::Belongs(Input * A)
 		
 	}
 	return NULL;
+}
+
+bool Input::Belongs(char A)
+{
+	for (int i = 0; i < Ranges->size(); i++)
+	{
+		char First = Ranges->at(i)->first;
+		char Second = Ranges->at(i)->second;
+		bool L = (A >= First) && (A <= Second);
+		if (L)
+			return true;
+	}
+	return false;
 }
 
 void Input::AddRange(char From, char To)
