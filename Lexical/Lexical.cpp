@@ -225,6 +225,7 @@ public:
 	static void CodeParser(DFANode* start, string file);
 	static NFA* RulesParser(string Regex);
 	static int isOperator(char O);
+	static bool isExpression(string Regex);
 };
 
 void Parser::CodeParser(DFANode* start, string file)
@@ -580,7 +581,7 @@ vector<Input*>* Parser::getInputs(DFANode* node)
 NFA * Parser::RulesParser(string Regex)
 {
 	//searching for the lowest priority operator
-	int MaxOperator = 0;
+	int MaxOperator = 1;
 	vector<int> Seperator;
 	Seperator.push_back(-1);
 	bool InsideBrackets = false;
@@ -601,21 +602,66 @@ NFA * Parser::RulesParser(string Regex)
 				}
 				if (l == MaxOperator)
 					Seperator.push_back(i);	
-			}
-			
+			}	
 		}
 		else
 			if (Regex[i] == ')')
 			{
 				InsideBrackets = false;
 			}
-		
 	}
-	
-
-	cout << MaxOperator << '\n';
-
-	return NULL;
+	Seperator.push_back(Regex.length());
+	vector<string> Operands;
+	for (size_t i = 0; i < Seperator.size()-1; i++)
+	{
+		string Extract = Regex.substr(Seperator[i] + 1, Seperator[i + 1] - Seperator[i] - 1);
+		string Insert= "";
+		for (size_t i = 0; i < Extract.length(); i++)
+		{
+			if (Extract[i] != ' ')
+				Insert.append(1,Extract[i]);
+		}
+		Operands.push_back(Insert);
+		cout << Operands.back() << '\n';
+	}
+	queue<char> LocalOperators;
+	stack<NFA *> LocalOperands;
+	for (size_t i = 1; i < Seperator.size()-1; i++)
+	{
+		LocalOperators.push(Regex[Seperator[i]]);
+		cout << Regex[Seperator[i]] << ' ';
+	}
+	for (size_t i = Operands.size()-1; i >=0; i--)
+	{
+		if (isExpression(Operands[i]))
+		{
+			LocalOperands.push(RulesParser(Operands[i]));
+		}
+		else if (InputDefinitions->find(Operands[i]) != InputDefinitions->end())
+		{
+			LocalOperands.push(CreateTransition(InputDefinitions->find(Operands[i])->second));
+		}
+		else if (Operands[i].length() == 1)
+		{
+			Input * X = new Input;
+			X->AddRange(Operands[i][0], Operands[i][0]);
+			X->SetName(Operands[i]);
+			InputDefinitions->emplace(X->GetName(), X);
+			LocalOperands.push(CreateTransition(X));
+		}
+	}
+	while (!LocalOperators.empty())
+	{
+		vector<NFA *> temporary;
+		for (int i = 0; i < 2; i++)
+		{
+			temporary.push_back(LocalOperands.top());
+			LocalOperands.pop();
+		}
+		LocalOperands.push(operators->at(MaxOperator)->find(LocalOperators.front())->second(&temporary));
+		LocalOperators.pop();
+	}
+	return LocalOperands.top();
 }
 
 int Parser::isOperator(char O)
@@ -628,6 +674,16 @@ int Parser::isOperator(char O)
 			return i + 1;
 	}
 	return 0;
+}
+
+bool Parser::isExpression(string Regex)
+{
+	for (size_t i = 0; i < Regex.length(); i++)
+	{
+		if (isOperator(Regex[i]))
+			return true;
+	}
+	return false;
 }
 
 /***************************************************************************************/
@@ -684,10 +740,10 @@ int main(int argc, char ** argv)
 	X->emplace('|', Parser::CreateConcatition);
 	X->emplace('/', Parser::CreateConcatition);
 	operators->push_back(X);
-	string k = "(A | B) * C K K . L)";
+	string k = "A | B * C | K K . L";
 	Parser::RulesParser(k);
 	/*****************************************************/
-	cout << Utils::ReadFile("C:\\Users\\Rana\\Desktop\\code.txt");
+	//cout << Utils::ReadFile("C:\\Users\\Rana\\Desktop\\code.txt");
 	char  c;
 	scanf("%c", &c);
 	return 0;
