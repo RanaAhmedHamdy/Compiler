@@ -464,10 +464,12 @@ DFANode* Parser::buildDFA(Node* startNode)
 
 					//compare input with all current inputs and remove common
 					/*************************************************/
-					for (int l = 0; l < inputs->size(); l++) {
+					/*for (int l = 0; l < inputs->size(); l++) {
 						pair<char, char>* p = inputs->at(i)->Belongs(inputs->at(l));
-						if (p)
+						if (p) {
+							cout << "remove\n";
 							inputs->at(i)->Remove(p);
+						}
 					}
 					/*************************************************/
 					if (result != NULL) {
@@ -595,6 +597,7 @@ vector<Node*>* Parser::EpsilonClosure(Node* node)
 
 vector<Input*>* Parser::getInputs(DFANode* node)
 {
+	cout << "=====================================\n";
 	vector<Node*>* t = node->GetNFANodes();
 	vector<Input*>* output = new vector<Input*>;
 
@@ -604,11 +607,12 @@ vector<Input*>* Parser::getInputs(DFANode* node)
 			if (find(output->begin(), output->end(), p.first) == output->end())
 			{
 				// Element not in vector.
+				cout << "Input : " << p.first->GetName() << "\n";
 				output->push_back(p.first);
 			}
 		}
 	}
-
+	cout << "=====================================\n";
 	return output;
 }  //el DFA
 
@@ -754,7 +758,8 @@ void TraverseDFA(DFANode * n)
 	{
 		for (auto p : *n->getNodesMap())
 		{
-			cout << p.first->GetName() << "\n";
+			//cout << "IN DFA: " << p.first->GetName() << "\n";
+			cout << "go from " << n << " to " << p.second << " on " << p.first->GetName() << "\n";
 			TraverseDFA(p.second);
 		}
 		cout << "===================================" << "\n";
@@ -778,8 +783,9 @@ int main(int argc, char ** argv)
 	X = new Operators;
 	X->emplace('|', &Parser::CreateUnion);
 	operators->push_back(X);
-	string k = "K | Letter . L | Letter . Letter";
+	string k = "K | F . O . R | F . R . O . M";
 	Traverse(Parser::RulesParser(k)->GetStart());
+	TraverseDFA(Parser::buildDFA(Parser::RulesParser(k)->GetStart()));
 	/*****************************************************/
 	//cout << Utils::ReadFile("C:\\Users\\Rana\\Desktop\\code.txt");
 	char  c;
