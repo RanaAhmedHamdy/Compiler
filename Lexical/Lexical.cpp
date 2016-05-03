@@ -665,7 +665,7 @@ NFA * Parser::RulesParser(string Regex)
 		LocalOperators.push(Regex[Seperator[i]]);
 		cout << Regex[Seperator[i]] << ' ';
 	}
-	for (size_t i = Operands.size()-1; i >=0; i--)
+	for (int i = Operands.size()-1; i >=0; i--)
 	{
 		if (isExpression(Operands[i]))
 		{
@@ -673,7 +673,8 @@ NFA * Parser::RulesParser(string Regex)
 		}
 		else if (InputDefinitions->find(Operands[i]) != InputDefinitions->end())
 		{
-			LocalOperands.push(CreateTransition(InputDefinitions->find(Operands[i])->second));
+			NFA * X = CreateTransition(InputDefinitions->find(Operands[i])->second);
+			LocalOperands.push(X);
 		}
 		else if (Operands[i].length() == 1)
 		{
@@ -692,7 +693,7 @@ NFA * Parser::RulesParser(string Regex)
 			temporary.push_back(LocalOperands.top());
 			LocalOperands.pop();
 		}
-		LocalOperands.push(operators->at(MaxOperator)->find(LocalOperators.front())->second(&temporary));
+		LocalOperands.push(operators->at(MaxOperator-1)->find(LocalOperators.front())->second(&temporary));
 		LocalOperators.pop();
 	}
 	return LocalOperands.top();
@@ -762,20 +763,23 @@ void TraverseDFA(DFANode * n)
 /*******************************************************************************************/
 int main(int argc, char ** argv)
 {
+	Input * Letter = new Input;
+	Letter->AddRange('a', 'z');
+	Letter->AddRange('A', 'Z');
+	Letter->SetName("Letter");
+	InputDefinitions->emplace(Letter->GetName(), Letter);
+	Input * Digit = new Input;
+	Digit->AddRange('0', '9');
+	Digit->SetName("Digit");
+	InputDefinitions->emplace(Digit->GetName(), Digit);
 	Operators * X = new Operators;
-	X->emplace('%', Parser::CreateConcatition);
-	X->emplace('*', Parser::CreateConcatition);
+	X->emplace('.', &Parser::CreateConcatition);
 	operators->push_back(X);
 	X = new Operators;
-	X->emplace('.', Parser::CreateConcatition);
-	X->emplace('-', Parser::CreateConcatition);
+	X->emplace('|', &Parser::CreateUnion);
 	operators->push_back(X);
-	X = new Operators;
-	X->emplace('|', Parser::CreateConcatition);
-	X->emplace('/', Parser::CreateConcatition);
-	operators->push_back(X);
-	string k = "A | B * C | K K . L";
-	Parser::RulesParser(k);
+	string k = "K | Letter . L | Letter . Letter";
+	Traverse(Parser::RulesParser(k)->GetStart());
 	/*****************************************************/
 	//cout << Utils::ReadFile("C:\\Users\\Rana\\Desktop\\code.txt");
 	char  c;
