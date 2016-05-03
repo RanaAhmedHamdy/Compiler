@@ -158,8 +158,15 @@ NFA::~NFA()
 {
 }
 /***********************************************************************************/
+typedef NFA * (*Operator)(vector<NFA*>*);
+typedef map<char, Operator> Operators;
+
 Node* StartNode = new Node;
 map<string, Input*>* InputDefinitions = new map<string, Input*>;
+
+vector<Operators *>* operators = new vector<Operators*> ;
+
+
 /**********************************************************************************/
 class Utils
 {
@@ -207,7 +214,7 @@ public:
 	static NFA* CreateTransition(Input * Input);
 	static NFA* CreateUnion(vector<NFA*>* NFACollection);
 	static NFA* CreateConcatition(vector<NFA*>* NFACollection);
-	static NFA* CreateKleen(NFA* nfa);
+	static NFA* CreateKleen(vector<NFA*>* nfa);
 	static DFANode* buildDFA(Node* startnode);
 	static DFANode* compareTwoVectors(vector<Node*>* nodes, vector<DFANode*>* allDFAStates);
 	static vector<Node*>* EpsilonClosure(vector<Node*>* nodes);
@@ -216,6 +223,8 @@ public:
 	static vector<Node*>* GetNodesForInput(Input* input, Node* node);
 	static void SetDFANodeType(DFANode* node);
 	static void CodeParser(DFANode* start, string file);
+	static NFA* RulesParser(string Regex);
+	static int isOperator(char O);
 };
 
 void Parser::CodeParser(DFANode* start, string file)
@@ -346,13 +355,13 @@ NFA * Parser::CreateConcatition(vector<NFA*>* NFACollection)
 	return X;
 }
 
-NFA * Parser::CreateKleen(NFA * nfa)
+NFA * Parser::CreateKleen(vector<NFA*> *  nfa)
 {
 	NFA* X = new NFA;
 	X->GetStart()->GetEpsilon()->push_back(X->GetEnd());
-	X->GetStart()->GetEpsilon()->push_back(nfa->GetStart());
-	nfa->GetEnd()->GetEpsilon()->push_back(X->GetEnd());
-	nfa->GetEnd()->GetEpsilon()->push_back(nfa->GetStart());
+	X->GetStart()->GetEpsilon()->push_back(nfa->at(0)->GetStart());
+	nfa->at(0)->GetEnd()->GetEpsilon()->push_back(X->GetEnd());
+	nfa->at(0)->GetEnd()->GetEpsilon()->push_back(nfa->at(0)->GetStart());
 	X->GetEnd()->setType(NODE_TYPE::ACCEPTANCE);
 	return X;
 }
@@ -568,6 +577,59 @@ vector<Input*>* Parser::getInputs(DFANode* node)
 	return output;
 }  //el DFA
 
+NFA * Parser::RulesParser(string Regex)
+{
+	//searching for the lowest priority operator
+	int MaxOperator = 0;
+	vector<int> Seperator;
+	Seperator.push_back(-1);
+	bool InsideBrackets = false;
+	for (size_t i = 0; i < Regex.length(); i++)
+	{
+		if (!InsideBrackets)
+		{
+			if (Regex[i] == '(')
+			{
+				InsideBrackets = true;
+			}
+			else
+			{
+				int l = isOperator(Regex[i]);
+				if (l && l > MaxOperator)
+				{
+					MaxOperator = l;
+				}
+				if (l == MaxOperator)
+					Seperator.push_back(i);	
+			}
+			
+		}
+		else
+			if (Regex[i] == ')')
+			{
+				InsideBrackets = false;
+			}
+		
+	}
+	
+
+	cout << MaxOperator << '\n';
+
+	return NULL;
+}
+
+int Parser::isOperator(char O)
+{
+	Operators * X;
+	for (size_t i = 0; i < operators->size(); i++)
+	{
+		X = operators->at(i);
+		if (X->find(O) != X->end())
+			return i + 1;
+	}
+	return 0;
+}
+
 /***************************************************************************************/
 set<Node*>* Visited = new set<Node*>;
 void Traverse(Node * n)
@@ -610,30 +672,20 @@ void TraverseDFA(DFANode * n)
 /*******************************************************************************************/
 int main(int argc, char ** argv)
 {
-	Input * Letter = new Input;
-	Letter->AddRange('a', 'z');
-	Letter->AddRange('A', 'Z');
-	Letter->SetName("letter");
-	InputDefinitions->emplace(Letter->GetName(), Letter);
-	Input * Digit = new Input;
-	Digit->AddRange('0', '9');
-	Digit->SetName("Digit");
-	InputDefinitions->emplace(Digit->GetName(), Digit);
-	NFA * l1 = Parser::CreateTransition(Letter);
-	NFA* d = Parser::CreateTransition(Digit);
-	vector<NFA*>* dl = new vector<NFA*>;
-	dl->push_back(l1);
-	dl->push_back(d);
-	NFA * DAndL = Parser::CreateUnion(dl);
-	DAndL = Parser::CreateKleen(DAndL);
-	NFA * l2 = Parser::CreateTransition(Letter);
-	vector<NFA*>* dl2 = new vector<NFA*>;
-	dl2->push_back(l2);
-	dl2->push_back(DAndL);
-	DAndL = Parser::CreateConcatition(dl2);
-	Traverse(DAndL->GetStart());
-	TraverseDFA(Parser::buildDFA(DAndL->GetStart()));
-
+	Operators * X = new Operators;
+	X->emplace('%', Parser::CreateConcatition);
+	X->emplace('*', Parser::CreateConcatition);
+	operators->push_back(X);
+	X = new Operators;
+	X->emplace('.', Parser::CreateConcatition);
+	X->emplace('-', Parser::CreateConcatition);
+	operators->push_back(X);
+	X = new Operators;
+	X->emplace('|', Parser::CreateConcatition);
+	X->emplace('/', Parser::CreateConcatition);
+	operators->push_back(X);
+	string k = "(A | B) * C K K . L)";
+	Parser::RulesParser(k);
 	/*****************************************************/
 	cout << Utils::ReadFile("C:\\Users\\Rana\\Desktop\\code.txt");
 	char  c;
