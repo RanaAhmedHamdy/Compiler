@@ -15,8 +15,45 @@ using namespace std;
 enum NODE_TYPE { START, ACCEPTANCE, NODE };
 
 
-/*************************************************************************/
+/***********************Syntax Analyzer***********************************/
+class Production
+{
+protected:
+	string name;
 
+public:
+	virtual string getName() = 0;
+	virtual void setName() = 0;
+};
+
+class Terminal : public Production
+{
+public:
+	string getName() { return name; }
+	void setName(string name) { this->name = name; }
+};
+
+class NonTerminal : public Production
+{
+public:
+	string getName() { return name; }
+	void setName(string name) { this->name = name; }
+
+private:
+	vector<Terminal*>* First = new vector<Terminal*>;
+	vector<Terminal*>* Follow = new vector<Terminal*>;
+};
+
+class Grammer
+{
+private:
+	vector<NonTerminal*>* NonTerminals = new vector<NonTerminal*>;
+	vector<Terminal*>* Terminals = new vector<Terminal*>;
+	NonTerminal* start;
+	map<NonTerminal*, vector<vector<Production*>*>*>* productions = new map<NonTerminal*, vector<vector<Production*>*>*>;
+
+};
+/*************************************************************************/
 class Input
 {
 	string Name;
@@ -226,68 +263,65 @@ public:
 	static NFA* RulesParser(string Regex);
 	static int isOperator(char O);
 	static bool isExpression(string Regex);
+	static bool checkIfcharBelongsToMap(DFANode* current, char input);
 };
+
+bool Parser::checkIfcharBelongsToMap(DFANode* current, char input)
+{
+	bool found = false;
+	for (auto p : *current->getNodesMap())
+	{
+		if (p.first->Belongs(input)) {
+			current = p.second;
+			found = true;
+		}
+	}
+
+	return found;
+}
 
 void Parser::CodeParser(DFANode* start, string file)
 {
 	queue<DFANode*>* DFAStatesQueue = new queue<DFANode*>;
-	stack<DFANode*>* DFAStatesStack = new stack<DFANode*>;
 	vector<string>* tokens = new vector<string>;
 	DFANode* current = new DFANode;
-
-	DFAStatesQueue->push(start);
-	DFAStatesStack->push(start);
-
+	DFANode* lastAcceptence = NULL;
+	int pointerOfLastAcc = 0;
 	int i = 0;
 	string token = "";
 
-	//convert file string into inputs
-	vector<Input*>* inputs = new vector<Input*>;
+	DFAStatesQueue->push(start);
 
 	while (!DFAStatesQueue->empty() && i < file.length())
 	{
 		current = DFAStatesQueue->front();
 		DFAStatesQueue->pop();
 		
-		bool found = false;
-		for (auto p : *current->getNodesMap())
-		{
-			if (p.first->Belongs(file.at(i))) {
-				current = p.second;
-				found = true;
-			}
-		}
+		bool found = checkIfcharBelongsToMap(current, file.at(i));
 
 		if (found) {
 			DFAStatesQueue->push(current);
-			DFAStatesStack->push(current);
-
 			token = token + file.at(i);
+			if (current->getNodeType() == ACCEPTANCE) {
+				lastAcceptence = current;
+				pointerOfLastAcc = i;
+			}
 			i++;
 		}
 		else {
-			DFANode* check = DFAStatesStack->top();
-			DFAStatesStack->pop();
-
-			while (check->getNodeType() != ACCEPTANCE) {
-				token.pop_back();
-				i--;
-				check = DFAStatesStack->top();
-				DFAStatesStack->pop();
-			}
-
-			//if last node in stack is acceptance
-			cout << token << "\n";
+			if (lastAcceptence != NULL) {
+				i = pointerOfLastAcc + 1;
+				lastAcceptence = NULL;
 			tokens->push_back(token);
 			token = "";
-			
 			while (!DFAStatesQueue->empty()) DFAStatesQueue->pop();
-			while (!DFAStatesStack->empty()) DFAStatesStack->pop();
-
-			current = start;
 			DFAStatesQueue->push(start);
-			DFAStatesStack->push(start);
+			} else {
+				i++;
+				DFAStatesQueue->push(current);
+			}
 		}
+		
 	}
 }
 
@@ -602,7 +636,7 @@ NFA * Parser::RulesParser(string Regex)
 				}
 				if (l == MaxOperator)
 					Seperator.push_back(i);	
-			}	
+			}
 		}
 		else
 			if (Regex[i] == ')')
