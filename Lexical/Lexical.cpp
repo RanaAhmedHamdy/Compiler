@@ -634,8 +634,6 @@ NFA * Parser::RulesParser(string Regex)
 				{
 					MaxOperator = l;
 				}
-				if (l == MaxOperator)
-					Seperator.push_back(i);	
 			}
 		}
 		else
@@ -644,19 +642,28 @@ NFA * Parser::RulesParser(string Regex)
 				InsideBrackets = false;
 			}
 	}
+	for (size_t i = 0; i < Regex.length(); i++)
+	{
+		int l = isOperator(Regex[i]);
+		if (l == MaxOperator)
+			Seperator.push_back(i);
+	}
 	Seperator.push_back(Regex.length());
 	vector<string> Operands;
 	for (size_t i = 0; i < Seperator.size()-1; i++)
 	{
-		string Extract = Regex.substr(Seperator[i] + 1, Seperator[i + 1] - Seperator[i] - 1);
-		string Insert= "";
-		for (size_t i = 0; i < Extract.length(); i++)
+		if (i + 1 < Seperator.size())
 		{
-			if (Extract[i] != ' ')
-				Insert.append(1,Extract[i]);
+			string Extract = Regex.substr(Seperator[i] + 1, Seperator[i + 1] - Seperator[i] - 1);
+			string Insert = "";
+			for (size_t i = 0; i < Extract.length(); i++)
+			{
+				if (Extract[i] != ' ')
+					Insert.append(1, Extract[i]);
+			}
+			Operands.push_back(Insert);
+			cout << Operands.back() << '\n';
 		}
-		Operands.push_back(Insert);
-		cout << Operands.back() << '\n';
 	}
 	queue<char> LocalOperators;
 	stack<NFA *> LocalOperands;
@@ -778,7 +785,7 @@ int main(int argc, char ** argv)
 	X = new Operators;
 	X->emplace('|', &Parser::CreateUnion);
 	operators->push_back(X);
-	string k = "K | Letter . L | Letter . Letter";
+	string k = "F. o. r | F. r . o .m ";
 	Traverse(Parser::RulesParser(k)->GetStart());
 	/*****************************************************/
 	//cout << Utils::ReadFile("C:\\Users\\Rana\\Desktop\\code.txt");
@@ -806,7 +813,7 @@ pair<char, char>* Input::Belongs(Input * A)
 			char Second = Ranges->at(i)->second;
 			bool L = (X->first >= First) && (X->second <= Second);
 			if (L)
-				return Ranges->at(i);
+				return X;
 		}
 		
 	}
