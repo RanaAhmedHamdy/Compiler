@@ -91,13 +91,15 @@ public:
 
 class NonTerminal : public Production
 {
-public:
-	string getName() { return name; }
-	void setName(string name) { this->name = name; }
-
 private:
 	vector<Terminal*>* First = new vector<Terminal*>;
 	vector<Terminal*>* Follow = new vector<Terminal*>;
+
+public:
+	string getName() { return name; }
+	void setName(string name) { this->name = name; }
+	vector<Terminal*>* GetFirst() { return First; }
+	vector<Terminal*>* GetFollow() { return Follow; }
 };
 
 class Grammer
@@ -157,8 +159,34 @@ public:
 	static vector<Production*>* ParseProduction(vector<string>* ruleTerms, Grammer* g);
 	static void ParseAllRules(string production, Grammer* g, int index);
 	static void PrintGrammer(Grammer* g);
-	
+	static Terminal* First(vector<Production*>* v, map<NonTerminal*, vector<vector<Production*>*>*>* productions);
+	static void SetFirst(Grammer* g);
 };
+
+Terminal* SyntaxAnalyzer::First(vector<Production*>* v, map<NonTerminal*, vector<vector<Production*>*>*>* productions)
+{
+	if (dynamic_cast<Terminal*>(v->at(0)) != NULL) {
+		return (Terminal*)v->at(0);
+	}
+
+	vector<vector<Production*>*>* p = productions->at((NonTerminal*)v->at(0));
+	for (int i = 0; i < p->size(); i++) {
+		for (int j = 0; j < p->at(i)->size(); j++) {
+			return First(p->at(j), productions);
+		}
+	}
+}
+
+void SyntaxAnalyzer::SetFirst(Grammer* g)
+{
+	for (auto p : *g->GetProductions()) {
+		for (int i = 0; i < p.second->size(); i++) {
+			Terminal *t = First(p.second->at(i), g->GetProductions());
+			cout << "First for : " << p.first->getName() << " : " << t->getName() << "\n";
+			p.first->GetFirst()->push_back(t);
+		}
+	}
+}
 
 void SyntaxAnalyzer::PrintGrammer(Grammer* g)
 {
@@ -279,6 +307,7 @@ Grammer* SyntaxAnalyzer::RulesParser(vector<string>* rules)
 		ParseAllRules(productions->at(i), g, i);
 	}
 
+	SetFirst(g);
 	return g;
 }
 /*************************************************************************/
@@ -1079,10 +1108,10 @@ int main(int argc, char ** argv)
 	/*****************************************************/
 	//cout << Utils::ReadFile("C:\\Users\\Rana\\Desktop\\code.txt");
 	/*******************************************************/
-	/*string s = Utils::ReadFile("C:\\Users\\Rana\\Desktop\\rules.txt");
+	string s = Utils::ReadFile("C:\\Users\\Rana\\Desktop\\rules.txt");
 	vector<string>* v = Utils::SplitString(s, "#");
 	v->erase(v->begin());
-	SyntaxAnalyzer::PrintGrammer(SyntaxAnalyzer::RulesParser(v));*/
+	SyntaxAnalyzer::PrintGrammer(SyntaxAnalyzer::RulesParser(v));
 	
 	char  c;
 	scanf("%c", &c);
