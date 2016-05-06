@@ -162,7 +162,71 @@ public:
 	static vector<Terminal*>* First(map<NonTerminal*, vector<vector<Production*>*>*>* productions, queue<vector<Production*>*>* q, NonTerminal* nonTerminal);
 	static void SetFirst(Grammer* g);
 	static void PrintFirst(Grammer* g);
+	static void setFollow(Grammer* g);
+	static void AddFollow(vector<Terminal*>* main, vector<Terminal*>* toBeAdded);
+	static void PrintFollow(Grammer* g);
 };
+
+void SyntaxAnalyzer::AddFollow(vector<Terminal*>* main, vector<Terminal*>* toBeAdded)
+{
+	for (int m = 0; m < toBeAdded->size(); m++) {
+		if (toBeAdded->at(m)->getName() != "epsilon") {
+			if (!FindTerminal(main, toBeAdded->at(m)->getName())) {
+				main->push_back(toBeAdded->at(m));
+			}
+		}
+	}
+}
+
+void SyntaxAnalyzer::PrintFollow(Grammer* g)
+{
+	for (int i = 0; i < g->GetNonTerminals()->size(); i++) {
+		cout << "Follow for : " << g->GetNonTerminals()->at(i)->getName() << " : ";
+		for (int j = 0; j < g->GetNonTerminals()->at(i)->GetFollow()->size(); j++) {
+			cout << g->GetNonTerminals()->at(i)->GetFollow()->at(j)->getName() << " ";
+		}
+		cout << "\n";
+	}
+}
+
+void SyntaxAnalyzer::setFollow(Grammer* g) {
+	Terminal* dollarSign = g->AddTerminal("$");
+	g->getStart()->GetFollow()->push_back(dollarSign);
+	
+	vector<NonTerminal*>* nonterminals = g->GetNonTerminals();
+	for (int i = 0; i < nonterminals->size(); i++) {
+		for (auto p : *g->GetProductions()) {
+			for (int j = 0; j < p.second->size(); j++) {
+				vector<Production*>* production = p.second->at(j);
+				for (int k = 0; k < production->size(); k++) {
+					if (production->at(k) == nonterminals->at(i)) {
+						if (k == production->size() - 1) {
+							AddFollow(nonterminals->at(i)->GetFollow(), p.first->GetFollow());
+						}
+						else {
+							if (dynamic_cast<Terminal*>(production->at(k + 1)) != NULL) {
+								if(!FindTerminal(nonterminals->at(i)->GetFollow(), production->at(k + 1)->getName()))
+									nonterminals->at(i)->GetFollow()->push_back((Terminal*)production->at(k + 1));
+							}
+							else {
+								NonTerminal* n = (NonTerminal*)production->at(k + 1);
+								AddFollow(nonterminals->at(i)->GetFollow(), n->GetFirst());
+
+								//askkkkkkkkkkkkkkkkkkkkkk
+								if (k == production->size() - 2) {
+									NonTerminal* n = (NonTerminal*)production->at(k + 1);
+									if (FindTerminal(n->GetFirst(), "epsilon")) {
+										AddFollow(nonterminals->at(i)->GetFollow(), p.first->GetFollow());
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
 
 void SyntaxAnalyzer::PrintFirst(Grammer *g)
 {
@@ -185,7 +249,8 @@ vector<Terminal*>* SyntaxAnalyzer::First(map<NonTerminal*, vector<vector<Product
 	q->pop();
 
 	if (dynamic_cast<Terminal*>(v->at(0)) != NULL) {
-		nonTerminal->GetFirst()->push_back((Terminal*)v->at(0));
+		if(!FindTerminal(nonTerminal->GetFirst(), v->at(0)->getName()))
+			nonTerminal->GetFirst()->push_back((Terminal*)v->at(0));
 	}
 	else {
 		vector<vector<Production*>*>* p = productions->at((NonTerminal*)v->at(0));
@@ -207,7 +272,8 @@ void SyntaxAnalyzer::SetFirst(Grammer* g)
 				First(g->GetProductions(), q, p.first);
 			}
 			else {
-				p.first->GetFirst()->push_back((Terminal*)p.second->at(i)->at(0));
+				if(!FindTerminal(p.first->GetFirst(), p.second->at(i)->at(0)->getName()))
+					p.first->GetFirst()->push_back((Terminal*)p.second->at(i)->at(0));
 			}
 		}
 	}
@@ -334,6 +400,8 @@ Grammer* SyntaxAnalyzer::RulesParser(vector<string>* rules)
 
 	SetFirst(g);
 	PrintFirst(g);
+	setFollow(g);
+	PrintFollow(g);
 
 	return g;
 }
@@ -1222,7 +1290,7 @@ void TraverseDFA(DFANode * n)
 /*******************************************************************************************/
 int main(int argc, char ** argv)
 {
-	Input * Letter = new Input;
+	/*Input * Letter = new Input;
 	Letter->AddRange('a', 'z');
 	Letter->AddRange('A', 'Z');
 	Letter->SetName("Letter");
@@ -1265,10 +1333,10 @@ int main(int argc, char ** argv)
 	/****************************************************
 	//cout << Utils::ReadFile("C:\\Users\\Rana\\Desktop\\code.txt");
 	/*******************************************************/
-	/*string s = Utils::ReadFile("C:\\Users\\Rana\\Desktop\\rules.txt");
+	string s = Utils::ReadFile("C:\\Users\\Rana\\Desktop\\rules.txt");
 	vector<string>* v = Utils::SplitString(s, "#");
 	v->erase(v->begin());
-	SyntaxAnalyzer::PrintGrammer(SyntaxAnalyzer::RulesParser(v));*/
+	SyntaxAnalyzer::PrintGrammer(SyntaxAnalyzer::RulesParser(v));
 
 	char  c;
 	scanf("%c", &c);
