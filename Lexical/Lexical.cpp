@@ -159,31 +159,56 @@ public:
 	static vector<Production*>* ParseProduction(vector<string>* ruleTerms, Grammer* g);
 	static void ParseAllRules(string production, Grammer* g, int index);
 	static void PrintGrammer(Grammer* g);
-	static Terminal* First(vector<Production*>* v, map<NonTerminal*, vector<vector<Production*>*>*>* productions);
+	static vector<Terminal*>* First(map<NonTerminal*, vector<vector<Production*>*>*>* productions, queue<vector<Production*>*>* q, NonTerminal* nonTerminal);
 	static void SetFirst(Grammer* g);
+	static void PrintFirst(Grammer* g);
 };
 
-Terminal* SyntaxAnalyzer::First(vector<Production*>* v, map<NonTerminal*, vector<vector<Production*>*>*>* productions)
+void SyntaxAnalyzer::PrintFirst(Grammer *g)
 {
-	if (dynamic_cast<Terminal*>(v->at(0)) != NULL) {
-		return (Terminal*)v->at(0);
+	for (int i = 0; i < g->GetNonTerminals()->size(); i++) {
+		cout << "First for : " << g->GetNonTerminals()->at(i)->getName() << " : ";
+		for (int j = 0; j < g->GetNonTerminals()->at(i)->GetFirst()->size(); j++) {
+			cout << g->GetNonTerminals()->at(i)->GetFirst()->at(j)->getName() << " ";
+		}
+		cout << "\n";
 	}
+}
 
-	vector<vector<Production*>*>* p = productions->at((NonTerminal*)v->at(0));
-	for (int i = 0; i < p->size(); i++) {
-		for (int j = 0; j < p->at(i)->size(); j++) {
-			return First(p->at(j), productions);
+
+vector<Terminal*>* SyntaxAnalyzer::First(map<NonTerminal*, vector<vector<Production*>*>*>* productions, queue<vector<Production*>*>* q, NonTerminal* nonTerminal)
+{
+	if (q->empty())
+		return nonTerminal->GetFirst();
+
+	vector<Production*>* v = q->front();
+	q->pop();
+
+	if (dynamic_cast<Terminal*>(v->at(0)) != NULL) {
+		nonTerminal->GetFirst()->push_back((Terminal*)v->at(0));
+	}
+	else {
+		vector<vector<Production*>*>* p = productions->at((NonTerminal*)v->at(0));
+		for (int i = 0; i < p->size(); i++) {
+			q->push(p->at(i));
 		}
 	}
+	return First(productions, q, nonTerminal);
 }
 
 void SyntaxAnalyzer::SetFirst(Grammer* g)
 {
+	queue<vector<Production*>*>* q = new queue<vector<Production*>*>;
 	for (auto p : *g->GetProductions()) {
 		for (int i = 0; i < p.second->size(); i++) {
-			Terminal *t = First(p.second->at(i), g->GetProductions());
-			cout << "First for : " << p.first->getName() << " : " << t->getName() << "\n";
-			p.first->GetFirst()->push_back(t);
+
+			if (dynamic_cast<Terminal*>(p.second->at(i)->at(0)) == NULL) {
+				q->push(p.second->at(i));
+				First(g->GetProductions(), q, p.first);
+			}
+			else {
+				p.first->GetFirst()->push_back((Terminal*)p.second->at(i)->at(0));
+			}
 		}
 	}
 }
@@ -308,6 +333,8 @@ Grammer* SyntaxAnalyzer::RulesParser(vector<string>* rules)
 	}
 
 	SetFirst(g);
+	PrintFirst(g);
+
 	return g;
 }
 /*************************************************************************/
