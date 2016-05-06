@@ -64,7 +64,7 @@ vector<string>* Utils::SplitStringOnce(string s, string delimiter)
 	token = s.substr(0, pos);
 	tokens->push_back(token);
 	s.erase(0, pos + delimiter.length());
-	
+
 	tokens->push_back(s);
 	return tokens;
 }
@@ -573,7 +573,7 @@ typedef map<char, OperatorDetails *> Operators;
 Node* StartNode = new Node;
 map<string, Input*>* InputDefinitions = new map<string, Input*>;
 
-vector<Operators *>* operators = new vector<Operators*> ;
+vector<Operators *>* operators = new vector<Operators*>;
 
 /**********************************************************************************/
 class Parser
@@ -595,6 +595,7 @@ public:
 	static NFA* RulesParser(string Regex);
 	static int isOperator(char O);
 	static bool isExpression(string Regex);
+	static string CleanBrackets(string Regex);
 	static bool checkIfcharBelongsToMap(DFANode* current, char input);
 };
 
@@ -628,7 +629,7 @@ void Parser::CodeParser(DFANode* start, string file)
 	{
 		current = DFAStatesQueue->front();
 		DFAStatesQueue->pop();
-		
+
 		bool found = checkIfcharBelongsToMap(current, file.at(i));
 
 		if (found) {
@@ -644,16 +645,17 @@ void Parser::CodeParser(DFANode* start, string file)
 			if (lastAcceptence != NULL) {
 				i = pointerOfLastAcc + 1;
 				lastAcceptence = NULL;
-			tokens->push_back(token);
-			token = "";
-			while (!DFAStatesQueue->empty()) DFAStatesQueue->pop();
-			DFAStatesQueue->push(start);
-			} else {
+				tokens->push_back(token);
+				token = "";
+				while (!DFAStatesQueue->empty()) DFAStatesQueue->pop();
+				DFAStatesQueue->push(start);
+			}
+			else {
 				i++;
 				DFAStatesQueue->push(current);
 			}
 		}
-		
+
 	}
 }
 
@@ -736,7 +738,7 @@ NFA * Parser::CreateKleen(vector<NFA*> *  nfa)
 DFANode* Parser::buildDFA(Node* startNode)
 {
 	DFANode* startDFANode = NULL;
-	
+
 	if (startNode)
 	{
 		//create dfa start node
@@ -746,8 +748,8 @@ DFANode* Parser::buildDFA(Node* startNode)
 		//get all nodes with epsilon from start node
 		//add them to nodes vector in start node
 		vector<Node*>* epsilonNodes = EpsilonClosure(startNode);
-		
-		if(!epsilonNodes->empty())
+
+		if (!epsilonNodes->empty())
 			startDFANode->GetNFANodes()->insert(startDFANode->GetNFANodes()->end(), epsilonNodes->begin(), epsilonNodes->end());
 
 		//queue for dfa states
@@ -857,11 +859,11 @@ vector<Node*>* Parser::GetNodesForInput(Input* input, Node* node)
 
 DFANode* Parser::compareTwoVectors(vector<Node*>* nodes, vector<DFANode*>* allDFAStates)
 {
-	for(size_t i = 0; i < allDFAStates->size(); i++) {
+	for (size_t i = 0; i < allDFAStates->size(); i++) {
 
 		vector<Node*>* NFAnodes = new vector<Node*>;
 		NFAnodes->insert(NFAnodes->end(), allDFAStates->at(i)->GetNFANodes()->begin(), allDFAStates->at(i)->GetNFANodes()->end());
-		
+
 		bool found = false;
 		if (nodes->size() == NFAnodes->size()) {
 			for (size_t j = 0; j < nodes->size(); j++) {
@@ -892,10 +894,10 @@ DFANode* Parser::compareTwoVectors(vector<Node*>* nodes, vector<DFANode*>* allDF
 vector<Node*>* Parser::EpsilonClosure(vector<Node*>* nodes)
 {
 	vector<Node*>* output = new vector<Node*>;
-	
+
 	for (size_t i = 0; i < nodes->size(); i++) {
 		vector<Node*>* e = EpsilonClosure(nodes->at(i));
-		if(!e->empty())
+		if (!e->empty())
 			output->insert(output->end(), e->begin(), e->end());
 	}
 
@@ -910,7 +912,7 @@ vector<Node*>* Parser::EpsilonClosure(Node* node)
 
 	queue->push_back(node);
 
-	while(!queue->empty()) {
+	while (!queue->empty()) {
 		test = queue->at(0);
 
 		queue->erase(queue->begin());
@@ -954,39 +956,48 @@ NFA * Parser::RulesParser(string Regex)
 	int MaxOperator = 1;
 	vector<int> Seperator;
 	Seperator.push_back(-1);
-	bool InsideBrackets = false;
+	int InsideBrackets = 0;
 	for (size_t i = 0; i < Regex.length(); i++)
 	{
+		if (Regex[i] == '(')
+		{
+			InsideBrackets++;
+		}
 		if (!InsideBrackets)
 		{
-			if (Regex[i] == '(')
+			int l = isOperator(Regex[i]);
+			if (l && l > MaxOperator)
 			{
-				InsideBrackets = true;
-			}
-			else
-			{
-				int l = isOperator(Regex[i]);
-				if (l && l > MaxOperator)
-				{
-					MaxOperator = l;
-				}
+				MaxOperator = l;
 			}
 		}
 		else
 			if (Regex[i] == ')')
 			{
-				InsideBrackets = false;
+				InsideBrackets--;
 			}
 	}
 	for (size_t i = 0; i < Regex.length(); i++)
 	{
+		if (Regex[i] == '(')
+		{
+			InsideBrackets++;
+		}
+		if (!InsideBrackets)
+		{
 		int l = isOperator(Regex[i]);
 		if (l == MaxOperator)
 			Seperator.push_back(i);
+		}
+		else
+			if (Regex[i] == ')')
+			{
+				InsideBrackets--;
+			}
 	}
 	Seperator.push_back(Regex.length());
 	vector<string> Operands;
-	for (size_t i = 0; i < Seperator.size()-1; i++)
+	for (size_t i = 0; i < Seperator.size() - 1; i++)
 	{
 		if (i + 1 < Seperator.size())
 		{
@@ -1003,13 +1014,13 @@ NFA * Parser::RulesParser(string Regex)
 	}
 	queue<char> LocalOperators;
 	stack<NFA *> LocalOperands;
-	for (size_t i = 1; i < Seperator.size()-1; i++)
+	for (size_t i = 1; i < Seperator.size() - 1; i++)
 	{
 		LocalOperators.push(Regex[Seperator[i]]);
-		cout << Regex[Seperator[i]] << ' ';
 	}
-	for (int i = Operands.size()-1; i >=0; i--)
+	for (int i = Operands.size() - 1; i >= 0; i--)
 	{
+		Operands[i] = Parser::CleanBrackets(Operands[i]);
 		if (isExpression(Operands[i]))
 		{
 			LocalOperands.push(RulesParser(Operands[i]));
@@ -1036,7 +1047,7 @@ NFA * Parser::RulesParser(string Regex)
 			temporary.push_back(LocalOperands.top());
 			LocalOperands.pop();
 		}
-		LocalOperands.push(operators->at(MaxOperator-1)->find(LocalOperators.front())->second->Action(&temporary));
+		LocalOperands.push(operators->at(MaxOperator - 1)->find(LocalOperators.front())->second->Action(&temporary));
 		LocalOperators.pop();
 	}
 	return LocalOperands.top();
@@ -1064,6 +1075,32 @@ bool Parser::isExpression(string Regex)
 	return false;
 }
 
+string Parser::CleanBrackets(string Regex)
+{
+
+	if (Regex[0] == '(')
+	{
+		string String = "";
+		int BracketCount = 1;
+		for (size_t i = 1; i < Regex.length() - 1; i++)
+		{
+			String += Regex[i];
+			if (Regex[i] == '(')
+				BracketCount++;
+			else if (Regex[i] == ')')
+				BracketCount--;
+		}
+		if (Regex[Regex.length() - 1] == ')')
+		{
+			BracketCount--;
+			if (!BracketCount)
+				return String;
+		}
+	}
+	return Regex;
+
+}
+
 /***************************************************************************************/
 set<Node*>* Visited = new set<Node*>;
 void Traverse(Node * n)
@@ -1078,7 +1115,7 @@ void Traverse(Node * n)
 
 				for (size_t i = 0; i < p.second->size(); i++)
 				{
-					cout << "go from "<< n<< " to " << p.second->at(i)<< " on " << p.first->GetName() << "\n";
+					cout << "go from " << n << " to " << p.second->at(i) << " on " << p.first->GetName() << "\n";
 					Traverse(p.second->at(i));
 				}
 			}
@@ -1108,7 +1145,7 @@ void TraverseDFA(DFANode * n)
 			}
 			cout << "===================================" << "\n";
 		}
-		
+
 	}
 }
 /*******************************************************************************************/
@@ -1123,7 +1160,7 @@ int main(int argc, char ** argv)
 	Digit->AddRange('0', '9');
 	Digit->SetName("Digit");
 	InputDefinitions->emplace(Digit->GetName(), Digit);
-	
+
 	//level 0 operators
 	Operators * X = new Operators;
 	OperatorDetails * Y = new OperatorDetails;
@@ -1131,15 +1168,15 @@ int main(int argc, char ** argv)
 	Y->NumberOfOperands = 1;
 	X->emplace('*', Y);
 	operators->push_back(X);
-		
+
 	//level 1 operators
 	X = new Operators;
 	Y = new OperatorDetails;
 	Y->Action = &Parser::CreateConcatition;
 	Y->NumberOfOperands = 2;
-	X->emplace('.',Y);
+	X->emplace('.', Y);
 	operators->push_back(X);
-	
+
 	//level 2 operators
 	X = new Operators;
 	Y = new OperatorDetails;
@@ -1148,10 +1185,12 @@ int main(int argc, char ** argv)
 	X->emplace('|', Y);
 	operators->push_back(X);
 
-	string k = "F . O * . R | F . R * . O . M";
+	string k = "F .( (O * . R) | (F . R)* ). O . M";
 
 	Traverse(Parser::RulesParser(k)->GetStart());
-	TraverseDFA(Parser::buildDFA(Parser::RulesParser(k)->GetStart()));
+	//TraverseDFA(Parser::buildDFA(Parser::RulesParser(k)->GetStart()));
+
+
 	/****************************************************
 	//cout << Utils::ReadFile("C:\\Users\\Rana\\Desktop\\code.txt");
 	/*******************************************************/
