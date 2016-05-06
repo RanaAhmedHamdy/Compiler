@@ -317,18 +317,29 @@ class Input
 	vector<pair<char, char>*>* Ranges = new vector<pair<char, char>*>;
 public:
 	Input();
+	Input(Input * Clone);
 	~Input();
 	vector<pair<char, char>*>* GetRanges() { return Ranges; }
 	pair<char, char>* Belongs(Input* A);
 	bool Belongs(char A);
 	void AddRange(char From, char To);
-	void Remove(pair<char, char>* ToBeRemoved);
+	Input * Remove(pair<char, char>* ToBeRemoved, string Name);
 	void SetName(string Name) { this->Name = Name; }
 	string GetName() { return this->Name; }
 };
 
 Input::Input()
 {
+}
+
+Input::Input(Input * Clone)
+{
+	vector<pair<char, char>* > dummy = *Clone->GetRanges();
+	for (size_t i = 0; i < dummy.size(); i++)
+	{
+		this->AddRange(dummy.at(i)->first, dummy.at(i)->second);
+	}
+	this->Name = Clone->GetName();
 }
 
 Input::~Input()
@@ -382,28 +393,30 @@ void Input::AddRange(char From, char To)
 	Ranges->push_back(X);
 }
 
-void Input::Remove(pair<char, char>* ToBeRemoved)
+Input * Input::Remove(pair<char, char>* ToBeRemoved, string Name)
 {
-	for (size_t i = 0; i < Ranges->size(); i++)
+	Input * I = new Input(this);
+
+	for (size_t i = 0; i < I->Ranges->size(); i++)
 	{
 		//make sure it belongs to the current range
-		if (ToBeRemoved->first >= Ranges->at(i)->first && ToBeRemoved->second <= Ranges->at(i)->second)
+		if (ToBeRemoved->first >= I->Ranges->at(i)->first && ToBeRemoved->second <= I->Ranges->at(i)->second)
 		{
 			//====================
 			//********************
 			//                    
-			if (ToBeRemoved->first == Ranges->at(i)->first && ToBeRemoved->second == Ranges->at(i)->second)
-				Ranges->erase(Ranges->begin() + i);
+			if (ToBeRemoved->first == I->Ranges->at(i)->first && ToBeRemoved->second == I->Ranges->at(i)->second)
+				I->Ranges->erase(I->Ranges->begin() + i);
 			//====================
 			//******
 			//      ++++++++++++++
-			else if (ToBeRemoved->first == Ranges->at(i)->first)
-				Ranges->at(i)->first = ToBeRemoved->second + 1;
+			else if (ToBeRemoved->first == I->Ranges->at(i)->first)
+				I->Ranges->at(i)->first = ToBeRemoved->second + 1;
 			//====================
 			//              ******
 			//++++++++++++++
-			else if (ToBeRemoved->second == Ranges->at(i)->second)
-				Ranges->at(i)->second = ToBeRemoved->first;
+			else if (ToBeRemoved->second == I->Ranges->at(i)->second)
+				I->Ranges->at(i)->second = ToBeRemoved->first;
 			//====================
 			//       *******
 			//+++++++       ++++++
@@ -411,13 +424,15 @@ void Input::Remove(pair<char, char>* ToBeRemoved)
 			{
 				pair<char, char>* X = new pair<char, char>;
 				X->first = ToBeRemoved->second + 1;
-				X->second = Ranges->at(i)->second;
-				Ranges->push_back(X);
-				Ranges->at(i)->second = ToBeRemoved->first - 1;
+				X->second = I->Ranges->at(i)->second;
+				I->Ranges->push_back(X);
+				I->Ranges->at(i)->second = ToBeRemoved->first - 1;
 			}
 			break;
 		}
 	}
+	I->SetName(I->GetName() + "-" + Name);
+	return I;
 }
 /**************************************************************************************/
 class Node {
@@ -1108,11 +1123,11 @@ int main(int argc, char ** argv)
 	/*****************************************************/
 	//cout << Utils::ReadFile("C:\\Users\\Rana\\Desktop\\code.txt");
 	/*******************************************************/
-	string s = Utils::ReadFile("C:\\Users\\Rana\\Desktop\\rules.txt");
+	/*string s = Utils::ReadFile("C:\\Users\\Rana\\Desktop\\rules.txt");
 	vector<string>* v = Utils::SplitString(s, "#");
 	v->erase(v->begin());
-	SyntaxAnalyzer::PrintGrammer(SyntaxAnalyzer::RulesParser(v));
-	
+	SyntaxAnalyzer::PrintGrammer(SyntaxAnalyzer::RulesParser(v));*/
+
 	char  c;
 	scanf("%c", &c);
 	return 0;
