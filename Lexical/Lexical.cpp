@@ -242,43 +242,15 @@ void SyntaxAnalyzer::FillParsingTable(Grammer* g)
 		{
 			vector<Terminal*>* firstOfProduction = GetFirstOfProduction(p.second->at(i));
 			for (int j = 0; j < firstOfProduction->size(); j++) {
-				//cout << "first of production of " << p.first->getName() << " is " << firstOfProduction->at(j)->getName() << "\n";
 				if (firstOfProduction->at(j)->getName() != "epsilon") {
-					if (g->GetParsingTable()->find(p.first) == g->GetParsingTable()->end()) {
-						map<Terminal*, vector<Production*>*>* m = new map<Terminal*, vector<Production*>*>;
-						m->emplace(firstOfProduction->at(j), p.second->at(i));
-						g->GetParsingTable()->emplace(p.first, m);
-					}
-					else {
-						map<Terminal*, vector<Production*>*>* m = g->GetParsingTable()->at(p.first);
-						m->emplace(firstOfProduction->at(j), p.second->at(i));
-					}
-					//g->AddToParsingTable(p.first, firstOfProduction->at(j), p.second->at(i));
+					g->AddToParsingTable(p.first, firstOfProduction->at(j), p.second->at(i));
 				}
 				else {
 					if (FindTerminal(p.first->GetFollow(), "$")) {
-						if (g->GetParsingTable()->find(p.first) == g->GetParsingTable()->end()) {
-							map<Terminal*, vector<Production*>*>* m = new map<Terminal*, vector<Production*>*>;
-							m->emplace(FindTerminal(g->GetTerminals(), "$"), p.second->at(i));
-							g->GetParsingTable()->emplace(p.first, m);
-						}
-						else {
-							map<Terminal*, vector<Production*>*>* m = g->GetParsingTable()->at(p.first);
-							m->emplace(FindTerminal(g->GetTerminals(), "$"), p.second->at(i));
-						}
-						//g->AddToParsingTable(p.first, FindTerminal(g->GetTerminals(), "$"), p.second->at(i));
+						g->AddToParsingTable(p.first, FindTerminal(g->GetTerminals(), "$"), p.second->at(i));
 					}
 					for (int k = 0; k < p.first->GetFollow()->size(); k++) {
-						if (g->GetParsingTable()->find(p.first) == g->GetParsingTable()->end()) {
-							map<Terminal*, vector<Production*>*>* m = new map<Terminal*, vector<Production*>*>;
-							m->emplace(p.first->GetFollow()->at(k), p.second->at(i));
-							g->GetParsingTable()->emplace(p.first, m);
-						}
-						else {
-							map<Terminal*, vector<Production*>*>* m = g->GetParsingTable()->at(p.first);
-							m->emplace(p.first->GetFollow()->at(k), p.second->at(i));
-						}
-						//g->AddToParsingTable(p.first, p.first->GetFollow()->at(k), p.second->at(i));
+						g->AddToParsingTable(p.first, p.first->GetFollow()->at(k), p.second->at(i));
 					}
 				}
 			}
