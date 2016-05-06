@@ -85,9 +85,19 @@ public:
 class Terminal : public Production
 {
 public:
+	Terminal();
+	~Terminal();
 	string getName() { return name; }
 	void setName(string name) { this->name = name; }
 };
+
+Terminal::Terminal()
+{
+}
+
+Terminal::~Terminal()
+{
+}
 
 class NonTerminal : public Production
 {
@@ -96,11 +106,21 @@ private:
 	vector<Terminal*>* Follow = new vector<Terminal*>;
 
 public:
+	NonTerminal();
+	~NonTerminal();
 	string getName() { return name; }
 	void setName(string name) { this->name = name; }
 	vector<Terminal*>* GetFirst() { return First; }
 	vector<Terminal*>* GetFollow() { return Follow; }
 };
+
+NonTerminal::NonTerminal()
+{
+}
+
+NonTerminal::~NonTerminal()
+{
+}
 
 class Grammer
 {
@@ -109,10 +129,12 @@ private:
 	vector<Terminal*>* Terminals = new vector<Terminal*>;
 	NonTerminal* start;
 	map<NonTerminal*, vector<vector<Production*>*>*>* productions = new map<NonTerminal*, vector<vector<Production*>*>*>;
+	map<NonTerminal*, map<Terminal*, vector<Production*>*>*>* ParsingTable = new map<NonTerminal*, map<Terminal*, vector<Production*>*>*>;
 
 public:
 	Grammer();
 	~Grammer();
+	map<NonTerminal*, map<Terminal*, vector<Production*>*>*>* GetParsingTable() { return ParsingTable; }
 	vector<NonTerminal*>* GetNonTerminals() { return NonTerminals; }
 	vector<Terminal*>* GetTerminals() { return Terminals; }
 	map<NonTerminal*, vector<vector<Production*>*>*>* GetProductions() { return productions; }
@@ -120,7 +142,21 @@ public:
 	void setStart(NonTerminal* start) { this->start = start; }
 	NonTerminal* AddNonTerminal(string name);
 	Terminal* AddTerminal(string name);
+	void AddToParsingTable(NonTerminal* nonTerminal, Terminal* terminal, vector<Production*>* production);
 };
+
+void Grammer::AddToParsingTable(NonTerminal* nonTerminal, Terminal* terminal, vector<Production*>* production)
+{
+	if (this->GetParsingTable()->find(nonTerminal) == this->GetParsingTable()->end()) {
+		map<Terminal*, vector<Production*>*>* m = new map<Terminal*, vector<Production*>*>;
+		m->emplace(terminal, production);
+		this->GetParsingTable()->emplace(nonTerminal, m);
+	}
+	else {
+		map<Terminal*, vector<Production*>*>* m = this->GetParsingTable()->at(nonTerminal);
+		m->emplace(terminal,production);
+	}
+}
 
 Terminal* Grammer::AddTerminal(string name)
 {
@@ -165,7 +201,90 @@ public:
 	static void setFollow(Grammer* g);
 	static void AddFollow(vector<Terminal*>* main, vector<Terminal*>* toBeAdded);
 	static void PrintFollow(Grammer* g);
+	static void FillParsingTable(Grammer* g);
+	static vector<Terminal*>* GetFirstOfProduction(vector<Production*>* production);
+	static void PrintParsingTable(Grammer* g);
 };
+
+void SyntaxAnalyzer::PrintParsingTable(Grammer* g)
+{
+	for (auto p : *g->GetParsingTable()) {
+		cout << p.first->getName() << "\n";
+		for (auto o : *p.second)
+		{
+			cout << o.first->getName() << " : " << p.first->getName() << " -> ";
+			for (int i = 0; i < o.second->size(); i++) {
+				cout << o.second->at(i)->getName() << " ";
+			}
+			cout << "\n";
+		}
+	}
+}
+
+vector<Terminal*>* SyntaxAnalyzer::GetFirstOfProduction(vector<Production*>* production)
+{
+	vector<Terminal*>* first = new vector<Terminal*>;
+	if (dynamic_cast<Terminal*>(production->at(0)) != NULL) {
+		first->push_back((Terminal*)production->at(0));
+	}
+	else {
+		NonTerminal* n = (NonTerminal*)production->at(0);
+		first->insert(first->end(), n->GetFirst()->begin(), n->GetFirst()->end());
+	}
+	return first;
+}
+
+void SyntaxAnalyzer::FillParsingTable(Grammer* g)
+{
+	for (auto p : *g->GetProductions())
+	{
+		for (int i = 0; i < p.second->size(); i++)
+		{
+			vector<Terminal*>* firstOfProduction = GetFirstOfProduction(p.second->at(i));
+			for (int j = 0; j < firstOfProduction->size(); j++) {
+				//cout << "first of production of " << p.first->getName() << " is " << firstOfProduction->at(j)->getName() << "\n";
+				if (firstOfProduction->at(j)->getName() != "epsilon") {
+					if (g->GetParsingTable()->find(p.first) == g->GetParsingTable()->end()) {
+						map<Terminal*, vector<Production*>*>* m = new map<Terminal*, vector<Production*>*>;
+						m->emplace(firstOfProduction->at(j), p.second->at(i));
+						g->GetParsingTable()->emplace(p.first, m);
+					}
+					else {
+						map<Terminal*, vector<Production*>*>* m = g->GetParsingTable()->at(p.first);
+						m->emplace(firstOfProduction->at(j), p.second->at(i));
+					}
+					//g->AddToParsingTable(p.first, firstOfProduction->at(j), p.second->at(i));
+				}
+				else {
+					if (FindTerminal(p.first->GetFollow(), "$")) {
+						if (g->GetParsingTable()->find(p.first) == g->GetParsingTable()->end()) {
+							map<Terminal*, vector<Production*>*>* m = new map<Terminal*, vector<Production*>*>;
+							m->emplace(FindTerminal(g->GetTerminals(), "$"), p.second->at(i));
+							g->GetParsingTable()->emplace(p.first, m);
+						}
+						else {
+							map<Terminal*, vector<Production*>*>* m = g->GetParsingTable()->at(p.first);
+							m->emplace(FindTerminal(g->GetTerminals(), "$"), p.second->at(i));
+						}
+						//g->AddToParsingTable(p.first, FindTerminal(g->GetTerminals(), "$"), p.second->at(i));
+					}
+					for (int k = 0; k < p.first->GetFollow()->size(); k++) {
+						if (g->GetParsingTable()->find(p.first) == g->GetParsingTable()->end()) {
+							map<Terminal*, vector<Production*>*>* m = new map<Terminal*, vector<Production*>*>;
+							m->emplace(p.first->GetFollow()->at(k), p.second->at(i));
+							g->GetParsingTable()->emplace(p.first, m);
+						}
+						else {
+							map<Terminal*, vector<Production*>*>* m = g->GetParsingTable()->at(p.first);
+							m->emplace(p.first->GetFollow()->at(k), p.second->at(i));
+						}
+						//g->AddToParsingTable(p.first, p.first->GetFollow()->at(k), p.second->at(i));
+					}
+				}
+			}
+		}
+	}
+}
 
 void SyntaxAnalyzer::AddFollow(vector<Terminal*>* main, vector<Terminal*>* toBeAdded)
 {
@@ -402,6 +521,8 @@ Grammer* SyntaxAnalyzer::RulesParser(vector<string>* rules)
 	PrintFirst(g);
 	setFollow(g);
 	PrintFollow(g);
+	FillParsingTable(g);
+	PrintParsingTable(g);
 
 	return g;
 }
