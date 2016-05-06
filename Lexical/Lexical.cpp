@@ -741,18 +741,26 @@ NFA * Parser::buildNFAwithEpsilon(string Path) {
 		default:
 		{
 			string Lexeme = "";
-			for (size_t i = k; str[i] != ':' && i < str.length(); i++)
+			for (size_t i = k; str[i] != ':' && str[i] != '=' && i < str.length(); i++)
 			{
 				Lexeme += str[i];
 				k = i;
 			}
-			k++;
+			if (str[k] == ':')
+			{
+				k++;
+				
+			}
+			//will call a method for creating input
+			else if (str[k] == '=')
+			{
+
+			}
+			else
+				continue;
 		}
 			break;
 		}
-		
-
-		
 	}
 	return Parser::CreateUnion(GlobalNFA);
 }
