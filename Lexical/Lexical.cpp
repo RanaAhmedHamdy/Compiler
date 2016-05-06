@@ -554,21 +554,28 @@ NFA::NFA()
 {
 }
 
-NFA::~NFA()
-{
-}
+NFA::~NFA() {}
 /***********************************************************************************/
 typedef NFA * (*Operator)(vector<NFA*>*);
-typedef map<char, Operator> Operators;
+
+/***********************************************************************************/
+class OperatorDetails
+{
+public:
+	Operator Action;
+	int NumberOfOperands;
+};
+
+/**********************************************************************************/
+
+typedef map<char, OperatorDetails *> Operators;
 
 Node* StartNode = new Node;
 map<string, Input*>* InputDefinitions = new map<string, Input*>;
 
 vector<Operators *>* operators = new vector<Operators*> ;
 
-
 /**********************************************************************************/
-
 class Parser
 {
 public:
@@ -1024,12 +1031,12 @@ NFA * Parser::RulesParser(string Regex)
 	while (!LocalOperators.empty())
 	{
 		vector<NFA *> temporary;
-		for (int i = 0; i < 2; i++)
+		for (int i = 0; i < operators->at(MaxOperator - 1)->find(LocalOperators.front())->second->NumberOfOperands; i++)
 		{
 			temporary.push_back(LocalOperands.top());
 			LocalOperands.pop();
 		}
-		LocalOperands.push(operators->at(MaxOperator-1)->find(LocalOperators.front())->second(&temporary));
+		LocalOperands.push(operators->at(MaxOperator-1)->find(LocalOperators.front())->second->Action(&temporary));
 		LocalOperators.pop();
 	}
 	return LocalOperands.top();
@@ -1084,6 +1091,7 @@ void Traverse(Node * n)
 	}
 }
 
+
 void TraverseDFA(DFANode * n)
 {
 	if (n)
@@ -1100,7 +1108,7 @@ void TraverseDFA(DFANode * n)
 /*******************************************************************************************/
 int main(int argc, char ** argv)
 {
-	/*Input * Letter = new Input;
+	Input * Letter = new Input;
 	Letter->AddRange('a', 'z');
 	Letter->AddRange('A', 'Z');
 	Letter->SetName("Letter");
@@ -1109,18 +1117,36 @@ int main(int argc, char ** argv)
 	Digit->AddRange('0', '9');
 	Digit->SetName("Digit");
 	InputDefinitions->emplace(Digit->GetName(), Digit);
+	
+	//level 0 operators
 	Operators * X = new Operators;
-	X->emplace('.', &Parser::CreateConcatition);
+	OperatorDetails * Y = new OperatorDetails;
+	Y->Action = &Parser::CreateKleen;
+	Y->NumberOfOperands = 1;
+	X->emplace('*', Y);
 	operators->push_back(X);
+		
+	//level 1 operators
 	X = new Operators;
-	X->emplace('|', &Parser::CreateUnion);
+	Y = new OperatorDetails;
+	Y->Action = &Parser::CreateConcatition;
+	Y->NumberOfOperands = 2;
+	X->emplace('.',Y);
+	operators->push_back(X);
+	
+	//level 2 operators
+	X = new Operators;
+	Y = new OperatorDetails;
+	Y->Action = &Parser::CreateUnion;
+	Y->NumberOfOperands = 2;
+	X->emplace('|', Y);
 	operators->push_back(X);
 
-	string k = "K | F . O . R | F . R . O . M";
+	string k = "F . O * . R | F . R * . O . M";
 
 	Traverse(Parser::RulesParser(k)->GetStart());
 	TraverseDFA(Parser::buildDFA(Parser::RulesParser(k)->GetStart()));
-	/*****************************************************/
+	/****************************************************
 	//cout << Utils::ReadFile("C:\\Users\\Rana\\Desktop\\code.txt");
 	/*******************************************************/
 	/*string s = Utils::ReadFile("C:\\Users\\Rana\\Desktop\\rules.txt");
