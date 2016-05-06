@@ -1092,17 +1092,23 @@ void Traverse(Node * n)
 }
 
 
+set<DFANode *> * DFAVisited = new set<DFANode*>;
 void TraverseDFA(DFANode * n)
 {
 	if (n)
 	{
-		for (auto p : *n->getNodesMap())
+		if (DFAVisited->find(n) == DFAVisited->end())
 		{
-			//cout << "IN DFA: " << p.first->GetName() << "\n";
-			cout << "go from " << n << " to " << p.second << " on " << p.first->GetName() << "\n";
-			TraverseDFA(p.second);
+			DFAVisited->emplace(n);
+			for (auto p : *n->getNodesMap())
+			{
+				//cout << "IN DFA: " << p.first->GetName() << "\n";
+				cout << "go from " << n << " to " << p.second << " on " << p.first->GetName() << "\n";
+				TraverseDFA(p.second);
+			}
+			cout << "===================================" << "\n";
 		}
-		cout << "===================================" << "\n";
+		
 	}
 }
 /*******************************************************************************************/
