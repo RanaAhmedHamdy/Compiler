@@ -579,7 +579,7 @@ vector<Operators *>* operators = new vector<Operators*>;
 class Parser
 {
 public:
-	static void buildNFAwithEpsilon(vector<string> tokens);
+	static NFA * buildNFAwithEpsilon(string Path);
 	static NFA* CreateTransition(Input * Input);
 	static NFA* CreateUnion(vector<NFA*>* NFACollection);
 	static NFA* CreateConcatition(vector<NFA*>* NFACollection);
@@ -659,42 +659,81 @@ void Parser::CodeParser(DFANode* start, string file)
 	}
 }
 
-void Parser::buildNFAwithEpsilon(vector<string> tokens) {
-	/*Node * PreNode;
-	for (int i = 0; i < tokens.size(); i++) {
-		for (int j = tokens[i].length(); j >= 0; j--) {
-			string keyword = tokens[i];
-			Node* n = new Node;
-			vector<Node*>* nodes = new vector<Node*>;
-
-			if (j == tokens[i].length()) {
-				n->setType(NODE_TYPE::ACCEPTANCE);
-				n->setValue(tokens[i]);
-				string s(1, keyword[j ]);
+NFA * Parser::buildNFAwithEpsilon(string Path) {
+	ifstream file(Path);
+	string str;
+	vector<NFA *>* GlobalNFA = new vector<NFA *>;
+	while (getline(file, str))
+	{
+		cout << "Reading Line" << '\n';
+		int k = 0;
+		while (str[k] == ' ' && ++k < str.length());
+		if (k == str.length()) continue;
+		switch (str[k])
+		{
+		case '{':
+		{
+			k++;
+			vector<string> * Keywords = Utils::SplitString(str.substr(k, str.find('}')-1), " ");
+			
+			NFA * DummyNFA;
+			for (size_t i = 0; i < Keywords->size(); i++)
+			{
+				string Dummy = "";
+				for (size_t j = 0; j < Keywords->at(i).length()-1; j++)
+				{
+					Dummy += Keywords->at(i)[j];
+					Dummy += '.';
+				}
+				Dummy += Keywords->at(i)[Keywords->at(i).length() - 1];
+				DummyNFA = Parser::RulesParser(Dummy);
+				DummyNFA->GetEnd()->setType(NODE_TYPE::ACCEPTANCE);
+				DummyNFA->GetEnd()->setLexeme(Keywords->at(i));
+				GlobalNFA->push_back(DummyNFA);
 			}
-			else if (j == 0) {
-				n->setType(NODE_TYPE::START);
-				nodes->push_back(PreNode);
-				string s(1, keyword[j]);
-				n->getNodesMap()->emplace(s, nodes);
-				StartNode->AddTransition(s, nodes);
-			}
-			else {
-				n->setType(NODE_TYPE::NODE);
-				nodes->push_back(PreNode);
-				string s(1, keyword[j]);
-				n->getNodesMap()->emplace(s, nodes);
-			}
-			PreNode = n;
 		}
-	}*/
+			break;
+		case '[':
+		{
+			k++;
+			vector<string>* Punctuation = Utils::SplitString(str.substr(k, str.find(']') - 1), " ");
+			NFA * DummyNFA;
+			for (size_t i = 0; i < Punctuation->size(); i++)
+			{
+				DummyNFA = Parser::RulesParser(Punctuation->at(i));
+				if (DummyNFA)
+				{
+					DummyNFA->GetEnd()->setType(NODE_TYPE::ACCEPTANCE);
+					DummyNFA->GetEnd()->setLexeme(Punctuation->at(i));
+					GlobalNFA->push_back(DummyNFA);
+				}
+				
+			}
+		}
+			break;
+		default:
+		{
+			string Lexeme = "";
+			for (size_t i = k; str[i] != ':' && i < str.length(); i++)
+			{
+				Lexeme += str[i];
+				k = i;
+			}
+			k++;
+		}
+			break;
+		}
+		
+
+		
+	}
+	return Parser::CreateUnion(GlobalNFA);
 }
 
 NFA * Parser::CreateTransition(Input * Input)
 {
 	NFA * X = new NFA;
 	X->GetStart()->AddTransition(Input, X->GetEnd());
-	X->GetEnd()->setType(NODE_TYPE::ACCEPTANCE);
 	return X;
 }
 
@@ -705,7 +744,6 @@ NFA * Parser::CreateUnion(vector<NFA*>* NFACollection)
 	{
 		X->GetStart()->GetEpsilon()->push_back(NFACollection->at(i)->GetStart());
 		NFACollection->at(i)->GetEnd()->GetEpsilon()->push_back(X->GetEnd());
-		NFACollection->at(i)->GetEnd()->setType(NODE_TYPE::ACCEPTANCE);
 	}
 	return X;
 }
@@ -713,7 +751,7 @@ NFA * Parser::CreateUnion(vector<NFA*>* NFACollection)
 NFA * Parser::CreateConcatition(vector<NFA*>* NFACollection)
 {
 	NFA * X = new NFA;
-	X->GetStart()->GetEpsilon()->push_back(NFACollection->at(0)->GetStart());
+	X->SetStart(NFACollection->at(0)->GetStart());
 	for (size_t i = 0; i < NFACollection->size() - 1; i++)
 	{
 		NFACollection->at(i)->GetEnd()->GetEpsilon()->push_back(NFACollection->at(i + 1)->GetStart());
@@ -1039,18 +1077,24 @@ NFA * Parser::RulesParser(string Regex)
 			LocalOperands.push(CreateTransition(X));
 		}
 	}
-	while (!LocalOperators.empty())
+	if (!LocalOperands.empty())
 	{
-		vector<NFA *> temporary;
-		for (int i = 0; i < operators->at(MaxOperator - 1)->find(LocalOperators.front())->second->NumberOfOperands; i++)
+		while (!LocalOperators.empty())
 		{
-			temporary.push_back(LocalOperands.top());
-			LocalOperands.pop();
+			vector<NFA *> temporary;
+			for (int i = 0; i < operators->at(MaxOperator - 1)->find(LocalOperators.front())->second->NumberOfOperands; i++)
+			{
+				temporary.push_back(LocalOperands.top());
+				LocalOperands.pop();
+			}
+			LocalOperands.push(operators->at(MaxOperator - 1)->find(LocalOperators.front())->second->Action(&temporary));
+			LocalOperators.pop();
 		}
-		LocalOperands.push(operators->at(MaxOperator - 1)->find(LocalOperators.front())->second->Action(&temporary));
-		LocalOperators.pop();
+		if (!LocalOperands.empty())
+			return LocalOperands.top();
 	}
-	return LocalOperands.top();
+
+		return NULL;
 }
 
 int Parser::isOperator(char O)
@@ -1186,8 +1230,8 @@ int main(int argc, char ** argv)
 	operators->push_back(X);
 
 	string k = "F .( (O * . R) | (F . R)* ). O . M";
-
-	Traverse(Parser::RulesParser(k)->GetStart());
+	
+	Traverse(Parser::buildNFAwithEpsilon("C:\\Users\\Mohammed\\Desktop\\LexicalRules.txt")->GetStart());
 	//TraverseDFA(Parser::buildDFA(Parser::RulesParser(k)->GetStart()));
 
 
