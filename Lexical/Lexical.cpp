@@ -31,7 +31,7 @@ string Utils::ReadFile(string s)
 	string file_contents;
 	while (getline(file, str))
 	{
-		file_contents += str;
+		file_contents += str + " ";
 		//file_contents.push_back('\n');
 	}
 	//file_contents.erase(remove_if(file_contents.begin(), file_contents.end(), isspace), file_contents.end());
@@ -795,8 +795,9 @@ bool Parser::checkIfcharBelongsToMap(DFANode* current, char input)
 	for (auto p : *current->getNodesMap())
 	{
 		if (p.first->Belongs(input)) {
+			cout << "input found : " << p.first->GetName() << "\n";
 			current = p.second;
-			found = true;
+			return found = true;
 		}
 	}
 
@@ -817,6 +818,7 @@ void Parser::CodeParser(DFANode* start, string file)
 
 	while (!DFAStatesQueue->empty() && i < file.length())
 	{
+		//cout << "in\n";
 		current = DFAStatesQueue->front();
 		DFAStatesQueue->pop();
 
@@ -825,22 +827,29 @@ void Parser::CodeParser(DFANode* start, string file)
 		if (found) {
 			DFAStatesQueue->push(current);
 			token = token + file.at(i);
-			if (current->getNodeType() == ACCEPTANCE) {
+			cout << "found token : " << token << "\n";
+			//cout << "dfA node type : " << current->getNodeType() << "\n";
+			if (current->getNodeType() == 2) {
+				//cout << "acceptance node\n";
 				lastAcceptence = current;
 				pointerOfLastAcc = i;
 			}
 			i++;
 		}
 		else {
+			cout << "not found\n";
 			if (lastAcceptence != NULL) {
+				cout << "there is last acceptance\n";
 				i = pointerOfLastAcc + 1;
 				lastAcceptence = NULL;
+				cout << "token : " << token << "\n";
 				tokens->push_back(token);
 				token = "";
 				while (!DFAStatesQueue->empty()) DFAStatesQueue->pop();
 				DFAStatesQueue->push(start);
 			}
 			else {
+				//cout << "error\n";
 				i++;
 				DFAStatesQueue->push(current);
 			}
@@ -1161,12 +1170,14 @@ DFANode* Parser::buildDFA(Node* startNode)
 					/*************************************************/
 					Input* newInput = new Input;
 					newInput = inputs->at(i);
-					for (int l = 0; l < inputs->size(); l++) {
+					/*for (int l = 0; l < inputs->size(); l++) {
 						if (inputs->at(i) != inputs->at(l)) {
 							pair<char, char>* p = inputs->at(i)->Belongs(inputs->at(l));
 							if (p) {
 								//cout << "remove\n";
 								newInput = inputs->at(i)->Remove(p, inputs->at(l)->GetName());
+								inputs->at(i) = newInput;
+								//cout << "Name of input after remove : " << newInput->GetName() << "\n";
 							}
 						}
 					}
@@ -1200,8 +1211,8 @@ void Parser::SetDFANodeType(DFANode* node)
 	vector<Node*>* NFANodes = node->GetNFANodes();
 
 	for (size_t i = 0; i < NFANodes->size(); i++) {
-		if (NFANodes->at(i)->getNodeType() == ACCEPTANCE) {
-			node->setType(ACCEPTANCE);
+		if (NFANodes->at(i)->getNodeType() == NODE_TYPE::ACCEPTANCE) {
+			node->setType(NODE_TYPE::ACCEPTANCE);
 			node->getValues()->push_back(NFANodes->at(i)->getValue());
 			node->getLexemes()->push_back(NFANodes->at(i)->getLexeme());
 		}
@@ -1604,8 +1615,9 @@ int main(int argc, char ** argv)
 	TraverseDFA(Parser::buildDFA(Parser::buildNFAwithEpsilon("C:\\Users\\Rana\\Desktop\\LexicalRules.txt")->GetStart()));
 
 
-	/****************************************************
+	/****************************************************/
 	//cout << Utils::ReadFile("C:\\Users\\Rana\\Desktop\\code.txt");
+	//Parser::CodeParser(Parser::buildDFA(Parser::buildNFAwithEpsilon("C:\\Users\\Rana\\Desktop\\LexicalRules.txt")->GetStart()), Utils::ReadFile("C:\\Users\\Rana\\Desktop\\code.txt"));
 	/*******************************************************/
 	/*string s = Utils::ReadFile("C:\\Users\\Rana\\Desktop\\rules.txt");
 	vector<string>* v = Utils::SplitString(s, "#");
