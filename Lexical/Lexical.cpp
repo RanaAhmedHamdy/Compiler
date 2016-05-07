@@ -791,24 +791,25 @@ public:
 
 bool Parser::checkIfcharBelongsToMap(DFANode* current, char input)
 {
-	bool found = false;
+	cout << "search for char : " << input << "\n";
+	cout << "inputs of current dfa state : ";
 	for (auto p : *current->getNodesMap())
 	{
+		cout << p.first->GetName();
 		if (p.first->Belongs(input)) {
-			cout << "input found : " << p.first->GetName() << "\n";
+			cout << "\ninput found : " << p.first->GetName() << "\n";
 			current = p.second;
-			return found = true;
+			return true;
 		}
 	}
-
-	return found;
+	cout << "\n";
+	return false;
 }
 
 void Parser::CodeParser(DFANode* start, string file)
 {
 	queue<DFANode*>* DFAStatesQueue = new queue<DFANode*>;
 	vector<string>* tokens = new vector<string>;
-	DFANode* current = new DFANode;
 	DFANode* lastAcceptence = NULL;
 	int pointerOfLastAcc = 0;
 	int i = 0;
@@ -819,27 +820,48 @@ void Parser::CodeParser(DFANode* start, string file)
 	while (!DFAStatesQueue->empty() && i < file.length())
 	{
 		//cout << "in\n";
-		current = DFAStatesQueue->front();
+		DFANode* current = DFAStatesQueue->front();
 		DFAStatesQueue->pop();
 
-		bool found = checkIfcharBelongsToMap(current, file.at(i));
+		/************************************************/
+		//bool found = checkIfcharBelongsToMap(current, file.at(i));
+		bool found = false;
+		cout << "search for char : " << file.at(i) << "\n";
+		cout << "inputs of current dfa state : ";
+		for (auto p : *current->getNodesMap())
+		{
+			cout << p.first->GetName();
+			if (p.first->Belongs(file.at(i))) {
+				cout << "\ninput found : " << p.first->GetName() << "\n";
+				//current = p.second;
+				DFAStatesQueue->push(p.second);
+				found = true;
+				break;
+			}
+		}
+		cout << "\n";
+
+		/********************************************************/
 
 		if (found) {
-			DFAStatesQueue->push(current);
+			//DFAStatesQueue->push(current);
 			token = token + file.at(i);
-			cout << "found token : " << token << "\n";
+			//cout << "found token : " << token << "\n";
 			//cout << "dfA node type : " << current->getNodeType() << "\n";
 			if (current->getNodeType() == 2) {
 				//cout << "acceptance node\n";
 				lastAcceptence = current;
 				pointerOfLastAcc = i;
+				cout << "ponter of last acceptance in found : " << pointerOfLastAcc << "\n";
 			}
+			cout << "i = " << i << "\n";
 			i++;
 		}
 		else {
-			cout << "not found\n";
+			//cout << "not found\n";
 			if (lastAcceptence != NULL) {
-				cout << "there is last acceptance\n";
+				//cout << "there is last acceptance\n";
+				cout << "ponter of last acceptance " << pointerOfLastAcc << "\n";
 				i = pointerOfLastAcc + 1;
 				lastAcceptence = NULL;
 				cout << "token : " << token << "\n";
@@ -1170,7 +1192,7 @@ DFANode* Parser::buildDFA(Node* startNode)
 					/*************************************************/
 					Input* newInput = new Input;
 					newInput = inputs->at(i);
-					/*for (int l = 0; l < inputs->size(); l++) {
+					for (int l = 0; l < inputs->size(); l++) {
 						if (inputs->at(i) != inputs->at(l)) {
 							pair<char, char>* p = inputs->at(i)->Belongs(inputs->at(l));
 							if (p) {
@@ -1612,12 +1634,12 @@ int main(int argc, char ** argv)
 	operators->push_back(X);
 
 	//Traverse(Parser::buildNFAwithEpsilon("C:\\Users\\Mohammed\\Desktop\\LexicalRules.txt")->GetStart());
-	TraverseDFA(Parser::buildDFA(Parser::buildNFAwithEpsilon("C:\\Users\\Rana\\Desktop\\LexicalRules.txt")->GetStart()));
+	//TraverseDFA(Parser::buildDFA(Parser::buildNFAwithEpsilon("C:\\Users\\Rana\\Desktop\\LexicalRules.txt")->GetStart()));
 
 
 	/****************************************************/
-	//cout << Utils::ReadFile("C:\\Users\\Rana\\Desktop\\code.txt");
-	//Parser::CodeParser(Parser::buildDFA(Parser::buildNFAwithEpsilon("C:\\Users\\Rana\\Desktop\\LexicalRules.txt")->GetStart()), Utils::ReadFile("C:\\Users\\Rana\\Desktop\\code.txt"));
+	cout << Utils::ReadFile("C:\\Users\\Rana\\Desktop\\code.txt");
+	Parser::CodeParser(Parser::buildDFA(Parser::buildNFAwithEpsilon("C:\\Users\\Rana\\Desktop\\LexicalRules.txt")->GetStart()), Utils::ReadFile("C:\\Users\\Rana\\Desktop\\code.txt"));
 	/*******************************************************/
 	/*string s = Utils::ReadFile("C:\\Users\\Rana\\Desktop\\rules.txt");
 	vector<string>* v = Utils::SplitString(s, "#");
