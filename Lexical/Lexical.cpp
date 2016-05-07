@@ -906,7 +906,8 @@ NFA * Parser::buildNFAwithEpsilon(string Path) {
 			string Lexeme = "";
 			for (size_t i = k; str[i] != ':' && str[i] != '=' && i < str.length(); i++)
 			{
-				Lexeme += str[i];
+				if(str[i] != ' ')
+					Lexeme += str[i];
 				k = i;
 			}
 			if (str[++k] == ':')
@@ -995,7 +996,33 @@ NFA * Parser::buildNFAwithEpsilon(string Path) {
 			//will call a method for creating input
 			else if (str[k] == '=')
 			{
-
+				string Dummy = "";
+				for (size_t i = ++k; i < str.length(); i++)
+				{
+					if (str[i] != ' ')
+						Dummy += str[i];
+				}
+				vector<string>* Split = Utils::SplitString(str, "|");
+				Input * I = new Input;
+				I->SetName(Lexeme);
+				for (size_t i = 0; i < Split->size(); i++)
+				{
+					if (Split->at(i).find('-') != Split->at(i).npos)
+					{
+						int pos = Split->at(i).find('-');
+						I->AddRange(Split->at(i)[pos - 1], Split->at(i)[pos + 1]);
+					}
+					else if(Split->at(i).length() == 1)
+					{
+						I->AddRange(Split->at(i)[0], Split->at(i)[0]);
+					}
+				}
+				for (size_t i = 0; i < I->GetRanges()->size(); i++)
+				{
+					cout << I->GetRanges()->at(i)->first << ' '
+						<< I->GetRanges()->at(i)->second << '\n';
+				}
+				InputDefinitions->emplace(I->GetName(), I);
 			}
 			else
 				continue;
@@ -1543,15 +1570,6 @@ void TraverseDFA(DFANode * n)
 /*******************************************************************************************/
 int main(int argc, char ** argv)
 {
-	Input * Letter = new Input;
-	Letter->AddRange('a', 'z');
-	Letter->AddRange('A', 'Z');
-	Letter->SetName("Letter");
-	InputDefinitions->emplace(Letter->GetName(), Letter);
-	Input * Digit = new Input;
-	Digit->AddRange('0', '9');
-	Digit->SetName("Digit");
-	InputDefinitions->emplace(Digit->GetName(), Digit);
 
 	//level 0 operators
 	Operators * X = new Operators;
