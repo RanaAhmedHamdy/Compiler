@@ -1158,23 +1158,27 @@ DFANode* Parser::buildDFA(Node* startNode)
 
 					//compare input with all current inputs and remove common
 					/*************************************************/
-					/*for (int l = 0; l < inputs->size(); l++) {
-						pair<char, char>* p = inputs->at(i)->Belongs(inputs->at(l));
-						if (p) {
-							cout << "remove\n";
-							inputs->at(i)->Remove(p, inputs->at(l)->GetName());
+					Input* newInput = new Input;
+					newInput = inputs->at(i);
+					for (int l = 0; l < inputs->size(); l++) {
+						if (inputs->at(i) != inputs->at(l)) {
+							pair<char, char>* p = inputs->at(i)->Belongs(inputs->at(l));
+							if (p) {
+								//cout << "remove\n";
+								newInput = inputs->at(i)->Remove(p, inputs->at(l)->GetName());
+							}
 						}
-					}*/
+					}
 					/*************************************************/
 					if (result != NULL) {
-						currentDFANode->getNodesMap()->emplace(inputs->at(i), result);
+						currentDFANode->getNodesMap()->emplace(newInput, result);
 					}
 					else
 					{
 						//if not found create new DFA state add it to the map and add it to both DFASates and all DFAstates
 						DFANode* newNode = new DFANode;
 						newNode->GetNFANodes()->insert(newNode->GetNFANodes()->end(), currentStates->begin(), currentStates->end());
-						currentDFANode->getNodesMap()->emplace(inputs->at(i), newNode);
+						currentDFANode->getNodesMap()->emplace(newInput, newNode);
 						DFAStates->push(newNode);
 						allDFAStates->push_back(newNode);
 
@@ -1291,7 +1295,7 @@ vector<Node*>* Parser::EpsilonClosure(Node* node)
 
 vector<Input*>* Parser::getInputs(DFANode* node)
 {
-	cout << "=====================================\n";
+	//cout << "=====================================\n";
 	vector<Node*>* t = node->GetNFANodes();
 	vector<Input*>* output = new vector<Input*>;
 
@@ -1301,12 +1305,12 @@ vector<Input*>* Parser::getInputs(DFANode* node)
 			if (find(output->begin(), output->end(), p.first) == output->end())
 			{
 				// Element not in vector.
-				cout << "Input : " << p.first->GetName() << "\n";
+				//cout << "Input : " << p.first->GetName() << "\n";
 				output->push_back(p.first);
 			}
 		}
 	}
-	cout << "=====================================\n";
+	//cout << "=====================================\n";
 	return output;
 }  //el DFA
 
@@ -1596,7 +1600,7 @@ int main(int argc, char ** argv)
 	operators->push_back(X);
 
 	//Traverse(Parser::buildNFAwithEpsilon("C:\\Users\\Mohammed\\Desktop\\LexicalRules.txt")->GetStart());
-	TraverseDFA(Parser::buildDFA(Parser::buildNFAwithEpsilon("C:\\Users\\Mohammed\\Desktop\\LexicalRules.txt")->GetStart()));
+	TraverseDFA(Parser::buildDFA(Parser::buildNFAwithEpsilon("C:\\Users\\Rana\\Desktop\\LexicalRules.txt")->GetStart()));
 
 
 	/****************************************************
