@@ -925,6 +925,7 @@ NFA * Parser::buildNFAwithEpsilon(string Path) {
 						if (!qOperand)
 						{
 							Dummy += '.';
+							qOperand = true;
 						}
 						Dummy += str[i];
 						wasLetter = true;
