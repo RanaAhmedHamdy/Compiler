@@ -154,7 +154,7 @@ void Grammer::AddToParsingTable(NonTerminal* nonTerminal, Terminal* terminal, ve
 	}
 	else {
 		map<Terminal*, vector<Production*>*>* m = this->GetParsingTable()->at(nonTerminal);
-		m->emplace(terminal,production);
+		m->emplace(terminal, production);
 	}
 }
 
@@ -283,7 +283,7 @@ void SyntaxAnalyzer::PrintFollow(Grammer* g)
 void SyntaxAnalyzer::setFollow(Grammer* g) {
 	Terminal* dollarSign = g->AddTerminal("$");
 	g->getStart()->GetFollow()->push_back(dollarSign);
-	
+
 	vector<NonTerminal*>* nonterminals = g->GetNonTerminals();
 	for (int i = 0; i < nonterminals->size(); i++) {
 		for (auto p : *g->GetProductions()) {
@@ -296,7 +296,7 @@ void SyntaxAnalyzer::setFollow(Grammer* g) {
 						}
 						else {
 							if (dynamic_cast<Terminal*>(production->at(k + 1)) != NULL) {
-								if(!FindTerminal(nonterminals->at(i)->GetFollow(), production->at(k + 1)->getName()))
+								if (!FindTerminal(nonterminals->at(i)->GetFollow(), production->at(k + 1)->getName()))
 									nonterminals->at(i)->GetFollow()->push_back((Terminal*)production->at(k + 1));
 							}
 							else {
@@ -340,7 +340,7 @@ vector<Terminal*>* SyntaxAnalyzer::First(map<NonTerminal*, vector<vector<Product
 	q->pop();
 
 	if (dynamic_cast<Terminal*>(v->at(0)) != NULL) {
-		if(!FindTerminal(nonTerminal->GetFirst(), v->at(0)->getName()))
+		if (!FindTerminal(nonTerminal->GetFirst(), v->at(0)->getName()))
 			nonTerminal->GetFirst()->push_back((Terminal*)v->at(0));
 	}
 	else {
@@ -363,7 +363,7 @@ void SyntaxAnalyzer::SetFirst(Grammer* g)
 				First(g->GetProductions(), q, p.first);
 			}
 			else {
-				if(!FindTerminal(p.first->GetFirst(), p.second->at(i)->at(0)->getName()))
+				if (!FindTerminal(p.first->GetFirst(), p.second->at(i)->at(0)->getName()))
 					p.first->GetFirst()->push_back((Terminal*)p.second->at(i)->at(0));
 			}
 		}
@@ -785,6 +785,8 @@ public:
 	static bool isExpression(string Regex);
 	static string CleanBrackets(string Regex);
 	static bool checkIfcharBelongsToMap(DFANode* current, char input);
+	static bool isBinaryOperator(char Operator);
+	static bool isLetter(char Letter);
 };
 
 bool Parser::checkIfcharBelongsToMap(DFANode* current, char input)
@@ -862,13 +864,13 @@ NFA * Parser::buildNFAwithEpsilon(string Path) {
 		case '{':
 		{
 			k++;
-			vector<string> * Keywords = Utils::SplitString(str.substr(k, str.find('}')-1), " ");
-			
+			vector<string> * Keywords = Utils::SplitString(str.substr(k, str.find('}') - 1), " ");
+
 			NFA * DummyNFA;
 			for (size_t i = 0; i < Keywords->size(); i++)
 			{
 				string Dummy = "";
-				for (size_t j = 0; j < Keywords->at(i).length()-1; j++)
+				for (size_t j = 0; j < Keywords->at(i).length() - 1; j++)
 				{
 					Dummy += Keywords->at(i)[j];
 					Dummy += '.';
@@ -880,7 +882,7 @@ NFA * Parser::buildNFAwithEpsilon(string Path) {
 				GlobalNFA->push_back(DummyNFA);
 			}
 		}
-			break;
+		break;
 		case '[':
 		{
 			k++;
@@ -895,10 +897,10 @@ NFA * Parser::buildNFAwithEpsilon(string Path) {
 					DummyNFA->GetEnd()->setLexeme(Punctuation->at(i));
 					GlobalNFA->push_back(DummyNFA);
 				}
-				
+
 			}
 		}
-			break;
+		break;
 		default:
 		{
 			string Lexeme = "";
@@ -907,10 +909,88 @@ NFA * Parser::buildNFAwithEpsilon(string Path) {
 				Lexeme += str[i];
 				k = i;
 			}
-			if (str[k] == ':')
+			if (str[++k] == ':')
 			{
+				NFA * DummyNFA;
 				k++;
-				
+				bool qOperand = true;
+				bool wasLetter = false;
+				bool Enable = true;
+				string Dummy = "";
+				for (size_t i = k; i < str.length(); i++)
+				{
+					if (isLetter(str[i]))
+					{
+						if (!qOperand)
+						{
+							Dummy += '.';
+						}
+						Dummy += str[i];
+						wasLetter = true;
+					}
+					else if (str[i] == ' ')
+					{
+						if (wasLetter)
+						{
+							qOperand = false;
+							wasLetter = false;
+						}
+
+					}
+					else
+					{
+						if (wasLetter)
+						{
+							qOperand = false;
+							wasLetter = false;
+						}
+						if (Enable) 
+						{	
+							if (isBinaryOperator(str[i]) && !qOperand)
+							{
+								Dummy += str[i];
+								qOperand = true;
+								continue;
+							}
+							else if (isOperator(str[i]) || str[i] == ')')
+							{
+								Dummy += str[i];
+								continue;
+							}
+							else if (str[i] == '(')
+							{
+								if (!qOperand)
+								{
+									Dummy += '.';
+									qOperand = true;
+								}
+								Dummy += str[i];
+								continue;
+							}
+						}
+						Enable = true;
+						if (qOperand)
+						{
+							Dummy += str[i];
+						}
+						else
+						{
+							Dummy += '.';
+							Dummy += str[i];
+						}
+						if (str[i] != '\\')
+							qOperand = false;
+						else
+						{
+							Enable = false;
+							qOperand = true;
+						}
+					}
+				}
+				DummyNFA = Parser::RulesParser(Dummy);
+				DummyNFA->GetEnd()->setLexeme(Lexeme);
+				DummyNFA->GetEnd()->setType(NODE_TYPE::ACCEPTANCE);
+				GlobalNFA->push_back(DummyNFA);
 			}
 			//will call a method for creating input
 			else if (str[k] == '=')
@@ -920,10 +1000,29 @@ NFA * Parser::buildNFAwithEpsilon(string Path) {
 			else
 				continue;
 		}
-			break;
+		break;
 		}
 	}
 	return Parser::CreateUnion(GlobalNFA);
+}
+
+bool Parser::isBinaryOperator(char Operator)
+{
+	int k = isOperator(Operator);
+	if (k)
+	{
+		OperatorDetails * X = operators->at(k - 1)->find(Operator)->second;
+		if (X->NumberOfOperands == 2)
+			return true;
+		else
+			return false;
+	}
+	return false;
+}
+
+bool Parser::isLetter(char Letter)
+{
+	return (Letter >= 'a' && Letter <= 'z') || (Letter >= 'A' && Letter <= 'Z');
 }
 
 NFA * Parser::CreateTransition(Input * Input)
@@ -947,7 +1046,7 @@ NFA * Parser::CreateUnion(vector<NFA*>* NFACollection)
 NFA * Parser::CreateConcatition(vector<NFA*>* NFACollection)
 {
 	NFA * X = new NFA;
-	X->SetStart(NFACollection->at(0)->GetStart());
+	X->GetStart()->GetEpsilon()->push_back(NFACollection->at(0)->GetStart());
 	for (size_t i = 0; i < NFACollection->size() - 1; i++)
 	{
 		NFACollection->at(i)->GetEnd()->GetEpsilon()->push_back(NFACollection->at(i + 1)->GetStart());
@@ -1036,9 +1135,9 @@ DFANode* Parser::buildDFA(Node* startNode)
 						pair<char, char>* p = inputs->at(i)->Belongs(inputs->at(l));
 						if (p) {
 							cout << "remove\n";
-							inputs->at(i)->Remove(p);
+							inputs->at(i)->Remove(p, inputs->at(l)->GetName());
 						}
-					}
+					}*/
 					/*************************************************/
 					if (result != NULL) {
 						currentDFANode->getNodesMap()->emplace(inputs->at(i), result);
@@ -1191,8 +1290,22 @@ NFA * Parser::RulesParser(string Regex)
 	vector<int> Seperator;
 	Seperator.push_back(-1);
 	int InsideBrackets = 0;
+	bool Escape = false;
+	bool EscapeEscape = false;
 	for (size_t i = 0; i < Regex.length(); i++)
 	{
+		if (Regex[i] == '\\' && !EscapeEscape)
+		{
+			Escape = true;
+			continue;
+		}
+		if (Escape)
+		{
+			Escape = false;
+			EscapeEscape = true;
+			continue;
+		}
+		EscapeEscape = false;
 		if (Regex[i] == '(')
 		{
 			InsideBrackets++;
@@ -1213,15 +1326,27 @@ NFA * Parser::RulesParser(string Regex)
 	}
 	for (size_t i = 0; i < Regex.length(); i++)
 	{
+		if (Regex[i] == '\\' && !EscapeEscape)
+		{
+			Escape = true;
+			continue;
+		}
+		if (Escape)
+		{
+			Escape = false;
+			EscapeEscape = true;
+			continue;
+		}
+		EscapeEscape = false;
 		if (Regex[i] == '(')
 		{
 			InsideBrackets++;
 		}
 		if (!InsideBrackets)
 		{
-		int l = isOperator(Regex[i]);
-		if (l == MaxOperator)
-			Seperator.push_back(i);
+			int l = isOperator(Regex[i]);
+			if (l == MaxOperator)
+				Seperator.push_back(i);
 		}
 		else
 			if (Regex[i] == ')')
@@ -1272,6 +1397,21 @@ NFA * Parser::RulesParser(string Regex)
 			InputDefinitions->emplace(X->GetName(), X);
 			LocalOperands.push(CreateTransition(X));
 		}
+		else if (Operands[i][0] == '\\' && Operands[i].length() == 2)
+		{
+			Operands[i].erase(0, 1);
+			if (InputDefinitions->find(Operands[i]) != InputDefinitions->end())
+				LocalOperands.push(CreateTransition(InputDefinitions->find(Operands[i])->second));
+			else
+			{
+				Input * X = new Input;
+				X->AddRange(Operands[i][0], Operands[i][0]);
+				X->SetName(Operands[i]);
+				InputDefinitions->emplace(X->GetName(), X);
+				LocalOperands.push(CreateTransition(X));
+			}
+
+		}
 	}
 	if (!LocalOperands.empty())
 	{
@@ -1290,7 +1430,7 @@ NFA * Parser::RulesParser(string Regex)
 			return LocalOperands.top();
 	}
 
-		return NULL;
+	return NULL;
 }
 
 int Parser::isOperator(char O)
@@ -1307,8 +1447,22 @@ int Parser::isOperator(char O)
 
 bool Parser::isExpression(string Regex)
 {
+	bool Escape = false;
+	bool EscapeEscape = false;
 	for (size_t i = 0; i < Regex.length(); i++)
 	{
+		if (Regex[i] == '\\' && !EscapeEscape)
+		{
+			Escape = true;
+			continue;
+		}
+		if (Escape)
+		{
+			Escape = false;
+			EscapeEscape = true;
+			continue;
+		}
+		EscapeEscape = false;
 		if (isOperator(Regex[i]))
 			return true;
 	}
@@ -1368,8 +1522,7 @@ void Traverse(Node * n)
 	}
 }
 
-
-set<DFANode *> * DFAVisited = new set<DFANode*>;
+set<DFANode*> * DFAVisited = new set<DFANode*>;
 void TraverseDFA(DFANode * n)
 {
 	if (n)
@@ -1379,19 +1532,18 @@ void TraverseDFA(DFANode * n)
 			DFAVisited->emplace(n);
 			for (auto p : *n->getNodesMap())
 			{
-				//cout << "IN DFA: " << p.first->GetName() << "\n";
 				cout << "go from " << n << " to " << p.second << " on " << p.first->GetName() << "\n";
 				TraverseDFA(p.second);
 			}
-			cout << "===================================" << "\n";
 		}
+		
 
 	}
 }
 /*******************************************************************************************/
 int main(int argc, char ** argv)
 {
-	/*Input * Letter = new Input;
+	Input * Letter = new Input;
 	Letter->AddRange('a', 'z');
 	Letter->AddRange('A', 'Z');
 	Letter->SetName("Letter");
@@ -1425,19 +1577,17 @@ int main(int argc, char ** argv)
 	X->emplace('|', Y);
 	operators->push_back(X);
 
-	string k = "F .( (O * . R) | (F . R)* ). O . M";
-	
-	Traverse(Parser::buildNFAwithEpsilon("C:\\Users\\Mohammed\\Desktop\\LexicalRules.txt")->GetStart());
-	//TraverseDFA(Parser::buildDFA(Parser::RulesParser(k)->GetStart()));
+	//Traverse(Parser::buildNFAwithEpsilon("C:\\Users\\Mohammed\\Desktop\\LexicalRules.txt")->GetStart());
+	TraverseDFA(Parser::buildDFA(Parser::buildNFAwithEpsilon("C:\\Users\\Mohammed\\Desktop\\LexicalRules.txt")->GetStart()));
 
 
 	/****************************************************
 	//cout << Utils::ReadFile("C:\\Users\\Rana\\Desktop\\code.txt");
 	/*******************************************************/
-	string s = Utils::ReadFile("C:\\Users\\Rana\\Desktop\\rules.txt");
+	/*string s = Utils::ReadFile("C:\\Users\\Rana\\Desktop\\rules.txt");
 	vector<string>* v = Utils::SplitString(s, "#");
 	v->erase(v->begin());
-	SyntaxAnalyzer::PrintGrammer(SyntaxAnalyzer::RulesParser(v));
+	SyntaxAnalyzer::PrintGrammer(SyntaxAnalyzer::RulesParser(v));*/
 
 	char  c;
 	scanf("%c", &c);
