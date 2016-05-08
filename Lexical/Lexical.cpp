@@ -583,7 +583,7 @@ void Input::AddRange(char From, char To)
 
 Input * Input::Remove(pair<char, char>* ToBeRemoved, string Name)
 {
-	Input * I =this;
+	Input * I = new Input(this);
 
 	for (size_t i = 0; i < I->Ranges->size(); i++)
 	{
@@ -1162,12 +1162,12 @@ DFANode* Parser::buildDFA(Node* startNode)
 					Input* newInput = new Input;
 					newInput = inputs->at(i);
 					for (int l = 0; l < inputs->size(); l++) {
-						if (inputs->at(i) != inputs->at(l)) {
-							pair<char, char>* p = inputs->at(i)->Belongs(inputs->at(l));
+						if (newInput != inputs->at(l)) {
+							pair<char, char>* p = newInput->Belongs(inputs->at(l));
 							if (p) {
 								//cout << "remove\n";
-								newInput = inputs->at(i)->Remove(p, inputs->at(l)->GetName());
-								inputs->at(i) = newInput;
+								newInput = newInput->Remove(p, inputs->at(l)->GetName());
+								//inputs->at(i) = newInput;
 								//cout << "Name of input after remove : " << newInput->GetName() << "\n";
 							}
 						}
@@ -1614,7 +1614,7 @@ int main(int argc, char ** argv)
 	X->emplace('|', Y);
 	operators->push_back(X);
 
-	NFA * node = Parser::buildNFAwithEpsilon("C:\\Users\\Rana\\Desktop\\LexicalRules.txt");
+	NFA * node = Parser::buildNFAwithEpsilon("C:\\Users\\Mohammed\\Desktop\\LexicalRules.txt");
 	Traverse(node->GetStart());
 	DFANode* d = Parser::buildDFA(node->GetStart());
 	TraverseDFA(d);
@@ -1622,8 +1622,8 @@ int main(int argc, char ** argv)
 	cout << "Number of NFA nodes " << Number << '\n';
 	cout << "Number of DFA node" << DFANumber << '\n';
 	/****************************************************/
-	cout << Utils::ReadFile("C:\\Users\\Rana\\Desktop\\code.txt");
-	Parser::CodeParser(d, Utils::ReadFile("C:\\Users\\Rana\\Desktop\\code.txt"));
+	cout << Utils::ReadFile("C:\\Users\\Mohammed\\Desktop\\code.txt");
+	Parser::CodeParser(d, Utils::ReadFile("C:\\Users\\Mohammed\\Desktop\\code.txt"));
 	/*******************************************************/
 	/*string s = Utils::ReadFile("C:\\Users\\Rana\\Desktop\\rules.txt");
 	vector<string>* v = Utils::SplitString(s, "#");
