@@ -786,25 +786,20 @@ public:
 	static int isOperator(char O);
 	static bool isExpression(string Regex);
 	static string CleanBrackets(string Regex);
-	static bool checkIfcharBelongsToMap(DFANode* current, char input);
+	static bool checkIfcharBelongsToMap(DFANode** current, char input);
 	static bool isBinaryOperator(char Operator);
 	static bool isLetter(char Letter);
 };
 
-bool Parser::checkIfcharBelongsToMap(DFANode* current, char input)
+bool Parser::checkIfcharBelongsToMap(DFANode** current, char input)
 {
-	cout << "search for char : " << input << "\n";
-	cout << "inputs of current dfa state : ";
-	for (auto p : *current->getNodesMap())
+	for (auto p : *(*current)->getNodesMap())
 	{
-		cout << p.first->GetName();
 		if (p.first->Belongs(input)) {
-			cout << "\ninput found : " << p.first->GetName() << "\n";
-			current = p.second;
+			*current = p.second;
 			return true;
 		}
 	}
-	cout << "\n";
 	return false;
 }
 
@@ -821,49 +816,23 @@ void Parser::CodeParser(DFANode* start, string file)
 
 	while (!DFAStatesQueue->empty() && i < file.length())
 	{
-		//cout << "in\n";
 		DFANode* current = DFAStatesQueue->front();
 		DFAStatesQueue->pop();
 
-		/************************************************/
-		//bool found = checkIfcharBelongsToMap(current, file.at(i));
-		bool found = false;
-		//cout << "search for char : " << file.at(i) << "\n";
-		//cout << "inputs of current dfa state : ";
-		for (auto p : *current->getNodesMap())
-		{
-			//cout << p.first->GetName();
-			if (p.first->Belongs(file.at(i))) {
-				//cout << "\ninput found : " << p.first->GetName() << "\n";
-				current = p.second;
-				DFAStatesQueue->push(current);
-				found = true;
-				break;
-			}
-		}
-		//cout << "\n";
-
-		/********************************************************/
-
+		bool found = checkIfcharBelongsToMap(&current, file.at(i));
+		
 		if (found) {
-			//DFAStatesQueue->push(current);
+			DFAStatesQueue->push(current);
 			token = token + file.at(i);
-			//cout << "found token : " << token << "\n";
-			//cout << "dfA node type : " << current->getNodeType() << "\n";
+	
 			if (current->getNodeType() == NODE_TYPE::ACCEPTANCE) {
-				//cout << "acceptance node\n";
 				lastAcceptence = current;
 				pointerOfLastAcc = i;
-				//cout << "ponter of last acceptance in found : " << pointerOfLastAcc << "\n";
 			}
-			//cout << "i = " << i << "\n";
 			i++;
 		}
 		else {
-			//cout << "not found\n";
 			if (lastAcceptence != NULL) {
-				//cout << "there is last acceptance\n";
-				//cout << "ponter of last acceptance " << pointerOfLastAcc << "\n";
 				i = pointerOfLastAcc + 1;
 				lastAcceptence = NULL;
 				cout << "token : " << token << "\n";
@@ -873,12 +842,10 @@ void Parser::CodeParser(DFANode* start, string file)
 				DFAStatesQueue->push(start);
 			}
 			else {
-				//cout << "error\n";
 				i++;
 				DFAStatesQueue->push(current);
 			}
 		}
-
 	}
 }
 
