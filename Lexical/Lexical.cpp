@@ -1201,16 +1201,16 @@ void Parser::SetDFANodeType(DFANode* node)
 {
 	vector<Node*>* NFANodes = node->GetNFANodes();
 
-	cout << "equivalent nodes : ";
+	//cout << "equivalent nodes : ";
 	for (size_t i = 0; i < NFANodes->size(); i++) {
-		cout << NFANodes->at(i)->getNumber() << " ";
+		//cout << NFANodes->at(i)->getNumber() << " ";
 		if (NFANodes->at(i)->getNodeType() == NODE_TYPE::ACCEPTANCE) {
 			node->setType(NODE_TYPE::ACCEPTANCE);
 			node->getValues()->push_back(NFANodes->at(i)->getValue());
 			node->getLexemes()->push_back(NFANodes->at(i)->getLexeme());
 		}
 	}
-	cout << "\n";
+	//cout << "\n";
 }
 
 vector<Node*>* Parser::GetNodesForInput(Input* input, Node* node)
@@ -1301,22 +1301,26 @@ vector<Node*>* Parser::EpsilonClosure(Node* node)
 
 vector<Input*>* Parser::getInputs(DFANode* node)
 {
-	//cout << "=====================================\n";
+	cout << "=====================================\n";
+	cout << "DFA node number : " << node->getNumber() << "\n";
+	cout << "eq nfa nodes: ";
 	vector<Node*>* t = node->GetNFANodes();
 	vector<Input*>* output = new vector<Input*>;
 
 	for (size_t i = 0; i < t->size(); i++) {
+		cout << t->at(i)->getNumber() << " ";
 		for (auto p : *t->at(i)->getNodesMap())
 		{
 			if (find(output->begin(), output->end(), p.first) == output->end())
 			{
 				// Element not in vector.
-				//cout << "Input : " << p.first->GetName() << "\n";
+				cout << "Input : " << p.first->GetName() << "\n";
 				output->push_back(p.first);
 			}
 		}
+		cout << "\n";
 	}
-	//cout << "=====================================\n";
+	cout << "=====================================\n";
 	return output;
 }  //el DFA
 
@@ -1619,11 +1623,11 @@ int main(int argc, char ** argv)
 	DFANode* d = Parser::buildDFA(node->GetStart());
 	TraverseDFA(d);
 
-	cout << "Number of NFA nodes " << Number << '\n';
-	cout << "Number of DFA node" << DFANumber << '\n';
+	//cout << "Number of NFA nodes " << Number << '\n';
+	//cout << "Number of DFA node" << DFANumber << '\n';
 	/****************************************************/
-	cout << Utils::ReadFile("C:\\Users\\Rana\\Desktop\\code.txt");
-	Parser::CodeParser(d, Utils::ReadFile("C:\\Users\\Rana\\Desktop\\code.txt"));
+	//cout << Utils::ReadFile("C:\\Users\\Rana\\Desktop\\code.txt");
+	//Parser::CodeParser(d, Utils::ReadFile("C:\\Users\\Rana\\Desktop\\code.txt"));
 	/*******************************************************/
 	/*string s = Utils::ReadFile("C:\\Users\\Rana\\Desktop\\rules.txt");
 	vector<string>* v = Utils::SplitString(s, "#");
