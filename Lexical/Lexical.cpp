@@ -1166,8 +1166,7 @@ DFANode* Parser::buildDFA(Node* startNode)
 							pair<char, char>* p = newInput->Belongs(inputs->at(l));
 							if (p) {
 								//cout << "remove\n";
-								newInput = newInput->Remove(p, inputs->at(l)->GetName());
-								//inputs->at(i) = newInput;
+								newInput =  newInput->Remove(p, inputs->at(l)->GetName());
 								//cout << "Name of input after remove : " << newInput->GetName() << "\n";
 							}
 						}
