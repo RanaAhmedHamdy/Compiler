@@ -583,7 +583,7 @@ void Input::AddRange(char From, char To)
 
 Input * Input::Remove(pair<char, char>* ToBeRemoved, string Name)
 {
-	Input * I = new Input(this);
+	Input * I =this;
 
 	for (size_t i = 0; i < I->Ranges->size(); i++)
 	{
@@ -623,6 +623,8 @@ Input * Input::Remove(pair<char, char>* ToBeRemoved, string Name)
 	return I;
 }
 /**************************************************************************************/
+int Number;
+
 class Node {
 
 private:
@@ -631,6 +633,8 @@ private:
 	NODE_TYPE type;
 	string value;
 	string Lexeme;
+	
+	int thisNumber;
 public:
 	Node();
 	Node(map<Input*, vector<Node*>*>* nodesMap, NODE_TYPE type, string value);
@@ -643,10 +647,10 @@ public:
 	NODE_TYPE getNodeType() { return type; }
 	string getValue() { return value; }
 	string getLexeme() { return Lexeme; }
-
 	void setType(NODE_TYPE type) { this->type = type; }
 	void setValue(string value) { this->value = value; }
 	void setLexeme(string lexeme) { this->Lexeme = lexeme; }
+	int getNumber() { return thisNumber; }
 };
 
 vector<Node*>* Node::next(Input * input)
@@ -687,6 +691,8 @@ Node::Node(map<Input *, vector<Node*>*>* nodesMap, NODE_TYPE type, string value)
 Node::Node()
 {
 	this->type = NODE_TYPE::NODE;
+	Number++;
+	thisNumber = Number;
 }
 
 Node::~Node()
@@ -694,6 +700,8 @@ Node::~Node()
 }
 
 /*************************************************************************/
+int DFANumber =0;
+
 class DFANode
 {
 private:
@@ -702,6 +710,7 @@ private:
 	vector<string>* lexemes = new vector<string>;
 	map<Input*, DFANode*>* nodesMap = new map<Input*, DFANode*>;
 	vector<Node*>* NFANodes = new vector<Node*>;
+	int thisNumber;
 
 public:
 	DFANode();
@@ -712,12 +721,13 @@ public:
 	vector<string>* getValues() { return values; }
 	vector<string>* getLexemes() { return lexemes; }
 	vector<Node*>* GetNFANodes() { return NFANodes; }
-
+	int getNumber() { return thisNumber; }
 	void setType(NODE_TYPE type) { this->type = type; }
 };
 
 DFANode::DFANode()
 {
+	thisNumber = ++DFANumber;
 }
 
 DFANode::~DFANode()
@@ -1569,18 +1579,20 @@ void Traverse(Node * n)
 		if (Visited->find(n) == Visited->end())
 		{
 			Visited->emplace(n);
+			if (n->getNodeType() == NODE_TYPE::ACCEPTANCE)
+				cout << "Acceptance on: " << n->getLexeme() << " from " << n->getNumber() << '\n';
 			for (auto p : *n->getNodesMap())
 			{
 
 				for (size_t i = 0; i < p.second->size(); i++)
 				{
-					cout << "go from " << n << " to " << p.second->at(i) << " on " << p.first->GetName() << "\n";
+					cout << "go from " << n->getNumber() << " to " << p.second->at(i)->getNumber() << " on " << p.first->GetName() << "\n";
 					Traverse(p.second->at(i));
 				}
 			}
 			for (auto p : *n->GetEpsilon())
 			{
-				cout << "go from " << n << " to " << p << " on " << "Epsilon" << "\n";
+				cout << "go from " << n->getNumber() << " to " << p->getNumber() << " on " << "Epsilon" << "\n";
 				Traverse(p);
 			}
 		}
@@ -1596,8 +1608,17 @@ void TraverseDFA(DFANode * n)
 		{
 			DFAVisited->emplace(n);
 			for (auto p : *n->getNodesMap())
-			{
-				cout << "go from " << n << " to " << p.second << " on " << p.first->GetName() << "\n";
+			{		
+				cout << "go from " << n->getNumber() << " to " << p.second->getNumber() << " on " << p.first->GetName() << "\n";
+				if (n->getNodeType() == NODE_TYPE::ACCEPTANCE)
+				{
+					cout << "Acceptance node: "<< n->getNumber();
+					for (size_t i = 0; i < n->getLexemes()->size(); i++)
+					{
+						cout << n->getLexemes()->at(i) << " ,";
+					}
+					cout << '\n';
+				}
 				TraverseDFA(p.second);
 			}
 		}
@@ -1633,8 +1654,8 @@ int main(int argc, char ** argv)
 	X->emplace('|', Y);
 	operators->push_back(X);
 
-	//Traverse(Parser::buildNFAwithEpsilon("C:\\Users\\Mohammed\\Desktop\\LexicalRules.txt")->GetStart());
-	//TraverseDFA(Parser::buildDFA(Parser::buildNFAwithEpsilon("C:\\Users\\Rana\\Desktop\\LexicalRules.txt")->GetStart()));
+	Traverse(Parser::buildNFAwithEpsilon("C:\\Users\\Mohammed\\Desktop\\LexicalRules.txt")->GetStart());
+	//TraverseDFA(Parser::buildDFA(Parser::buildNFAwithEpsilon("C:\\Users\\Mohammed\\Desktop\\LexicalRules.txt")->GetStart()));
 
 
 	/****************************************************/
