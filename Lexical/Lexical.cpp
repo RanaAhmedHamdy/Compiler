@@ -204,7 +204,53 @@ public:
 	static void FillParsingTable(Grammer* g);
 	static vector<Terminal*>* GetFirstOfProduction(vector<Production*>* production);
 	static void PrintParsingTable(Grammer* g);
+	static void tokensParser(Grammer* g);
 };
+
+void SyntaxAnalyzer::tokensParser(Grammer* g)
+{
+	map<NonTerminal*, map<Terminal*, vector<Production*>*>*>* parsingTable = g->GetParsingTable();
+	stack<Production*>* productionsStack = new stack<Production*>;
+	productionsStack->push(FindTerminal(g->GetTerminals(), "$"));
+	productionsStack->push(g->getStart());
+
+	//getnexttoken
+	string token;
+
+	while (true)
+	{
+		Production* production = productionsStack->top();
+		productionsStack->pop();
+		if (dynamic_cast<Terminal*>(production) != NULL) {
+			Terminal* terminal = (Terminal*)production;
+			if (terminal->getName() == token)
+			{
+				//get next token
+			}
+			else {
+				cout << "error missing " << terminal->getName() << "\n";
+			}
+			if (terminal->getName() == "$")
+				return;
+		}
+		else
+		{
+			map<Terminal*, vector<Production*>*>* m = parsingTable->at[(NonTerminal*)production];
+			vector<Production*>* productionVector = m->at[FindTerminal(g->GetTerminals(), token)];
+			if (productionVector->empty()) {
+				//panic error recovery
+				cout << "error illegal (" << production->getName() << ") - discard " << token << "\n";
+				productionsStack->push(production);
+				//get next token
+			}
+			else {
+				for (int i = productionVector->size() - 1; i >= 0; i--) {
+					productionsStack->push(productionVector->at(i));
+				}
+			}
+		}
+	}
+}
 
 void SyntaxAnalyzer::PrintParsingTable(Grammer* g)
 {
@@ -1165,9 +1211,7 @@ DFANode* Parser::buildDFA(Node* startNode)
 						if (newInput != inputs->at(l)) {
 							pair<char, char>* p = newInput->Belongs(inputs->at(l));
 							if (p) {
-								//cout << "remove\n";
 								newInput =  newInput->Remove(p, inputs->at(l)->GetName());
-								//cout << "Name of input after remove : " << newInput->GetName() << "\n";
 							}
 						}
 					}
