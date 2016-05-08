@@ -623,7 +623,7 @@ Input * Input::Remove(pair<char, char>* ToBeRemoved, string Name)
 	return I;
 }
 /**************************************************************************************/
-int Number;
+int Number=1;
 
 class Node {
 
@@ -768,7 +768,6 @@ public:
 
 typedef map<char, OperatorDetails *> Operators;
 
-Node* StartNode = new Node;
 map<string, Input*>* InputDefinitions = new map<string, Input*>;
 
 vector<Operators *>* operators = new vector<Operators*>;
@@ -1612,6 +1611,11 @@ void TraverseDFA(DFANode * n)
 				cout << "go from " << n->getNumber() << " to " << p.second->getNumber() << " on " << p.first->GetName() << "\n";
 				if (n->getNodeType() == NODE_TYPE::ACCEPTANCE)
 				{
+					cout << "contained Node: ";
+					for (size_t i = 0; i < n->GetNFANodes()->size(); i++)
+					{
+						cout << n->GetNFANodes()->at(i)->getNumber() << ",";
+					}
 					cout << "Acceptance node: "<< n->getNumber();
 					for (size_t i = 0; i < n->getLexemes()->size(); i++)
 					{
@@ -1655,13 +1659,13 @@ int main(int argc, char ** argv)
 	operators->push_back(X);
 
 	Traverse(Parser::buildNFAwithEpsilon("C:\\Users\\Mohammed\\Desktop\\LexicalRules.txt")->GetStart());
-	//TraverseDFA(Parser::buildDFA(Parser::buildNFAwithEpsilon("C:\\Users\\Mohammed\\Desktop\\LexicalRules.txt")->GetStart()));
+	TraverseDFA(Parser::buildDFA(Parser::buildNFAwithEpsilon("C:\\Users\\Mohammed\\Desktop\\LexicalRules.txt")->GetStart()));
 
 
 	/****************************************************/
-	cout << Utils::ReadFile("C:\\Users\\Rana\\Desktop\\code.txt");
-	Parser::CodeParser(Parser::buildDFA(Parser::buildNFAwithEpsilon("C:\\Users\\Rana\\Desktop\\LexicalRules.txt")->GetStart()), Utils::ReadFile("C:\\Users\\Rana\\Desktop\\code.txt"));
-	/*******************************************************/
+/*	cout << Utils::ReadFile("C:\\Users\\Mohammed\\Desktop\\code.txt");
+	Parser::CodeParser(Parser::buildDFA(Parser::buildNFAwithEpsilon("C:\\Users\\Mohammed\\Desktop\\LexicalRules.txt")->GetStart()), Utils::ReadFile("C:\\Users\\Mohammed\\Desktop\\code.txt"));
+	*//*******************************************************/
 	/*string s = Utils::ReadFile("C:\\Users\\Rana\\Desktop\\rules.txt");
 	vector<string>* v = Utils::SplitString(s, "#");
 	v->erase(v->begin());
