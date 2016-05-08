@@ -623,7 +623,7 @@ Input * Input::Remove(pair<char, char>* ToBeRemoved, string Name)
 	return I;
 }
 /**************************************************************************************/
-int Number;
+int Number=1;
 
 class Node {
 
@@ -768,7 +768,6 @@ public:
 
 typedef map<char, OperatorDetails *> Operators;
 
-Node* StartNode = new Node;
 map<string, Input*>* InputDefinitions = new map<string, Input*>;
 
 vector<Operators *>* operators = new vector<Operators*>;
@@ -858,7 +857,7 @@ void Parser::CodeParser(DFANode* start, string file)
 			token = token + file.at(i);
 			//cout << "found token : " << token << "\n";
 			//cout << "dfA node type : " << current->getNodeType() << "\n";
-			if (current->getNodeType() == 2) {
+			if (current->getNodeType() == NODE_TYPE::ACCEPTANCE) {
 				//cout << "acceptance node\n";
 				lastAcceptence = current;
 				pointerOfLastAcc = i;
@@ -1242,13 +1241,16 @@ void Parser::SetDFANodeType(DFANode* node)
 {
 	vector<Node*>* NFANodes = node->GetNFANodes();
 
+	cout << "equivalent nodes : ";
 	for (size_t i = 0; i < NFANodes->size(); i++) {
+		cout << NFANodes->at(i)->getNumber() << " ";
 		if (NFANodes->at(i)->getNodeType() == NODE_TYPE::ACCEPTANCE) {
 			node->setType(NODE_TYPE::ACCEPTANCE);
 			node->getValues()->push_back(NFANodes->at(i)->getValue());
 			node->getLexemes()->push_back(NFANodes->at(i)->getLexeme());
 		}
 	}
+	cout << "\n";
 }
 
 vector<Node*>* Parser::GetNodesForInput(Input* input, Node* node)
@@ -1610,6 +1612,11 @@ void TraverseDFA(DFANode * n)
 			for (auto p : *n->getNodesMap())
 			{		
 				cout << "go from " << n->getNumber() << " to " << p.second->getNumber() << " on " << p.first->GetName() << "\n";
+				cout << "contained Node: ";
+				for (size_t i = 0; i < n->GetNFANodes()->size(); i++)
+				{
+					cout << n->GetNFANodes()->at(i)->getNumber() << ",";
+				}
 				if (n->getNodeType() == NODE_TYPE::ACCEPTANCE)
 				{
 					cout << "Acceptance node: "<< n->getNumber();
@@ -1654,13 +1661,16 @@ int main(int argc, char ** argv)
 	X->emplace('|', Y);
 	operators->push_back(X);
 
-	//Traverse(Parser::buildNFAwithEpsilon("C:\\Users\\Mohammed\\Desktop\\LexicalRules.txt")->GetStart());
-	TraverseDFA(Parser::buildDFA(Parser::buildNFAwithEpsilon("C:\\Users\\Rana\\Desktop\\LexicalRules.txt")->GetStart()));
+	Node* n = Parser::buildNFAwithEpsilon("C:\\Users\\Rana\\Desktop\\LexicalRules.txt")->GetStart();
+	Traverse(n);
+	cout << "===========================================================";
+	DFANode* d = Parser::buildDFA(n);
+	TraverseDFA(d);
 
 
 	/****************************************************/
 	//cout << Utils::ReadFile("C:\\Users\\Rana\\Desktop\\code.txt");
-	//Parser::CodeParser(Parser::buildDFA(Parser::buildNFAwithEpsilon("C:\\Users\\Rana\\Desktop\\LexicalRules.txt")->GetStart()), Utils::ReadFile("C:\\Users\\Rana\\Desktop\\code.txt"));
+	Parser::CodeParser(d, Utils::ReadFile("C:\\Users\\Rana\\Desktop\\code.txt"));
 	/*******************************************************/
 	/*string s = Utils::ReadFile("C:\\Users\\Rana\\Desktop\\rules.txt");
 	vector<string>* v = Utils::SplitString(s, "#");
