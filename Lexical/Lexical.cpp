@@ -1654,13 +1654,13 @@ int main(int argc, char ** argv)
 	X->emplace('|', Y);
 	operators->push_back(X);
 
-	Traverse(Parser::buildNFAwithEpsilon("C:\\Users\\Mohammed\\Desktop\\LexicalRules.txt")->GetStart());
-	//TraverseDFA(Parser::buildDFA(Parser::buildNFAwithEpsilon("C:\\Users\\Mohammed\\Desktop\\LexicalRules.txt")->GetStart()));
+	//Traverse(Parser::buildNFAwithEpsilon("C:\\Users\\Mohammed\\Desktop\\LexicalRules.txt")->GetStart());
+	TraverseDFA(Parser::buildDFA(Parser::buildNFAwithEpsilon("C:\\Users\\Rana\\Desktop\\LexicalRules.txt")->GetStart()));
 
 
 	/****************************************************/
-	cout << Utils::ReadFile("C:\\Users\\Rana\\Desktop\\code.txt");
-	Parser::CodeParser(Parser::buildDFA(Parser::buildNFAwithEpsilon("C:\\Users\\Rana\\Desktop\\LexicalRules.txt")->GetStart()), Utils::ReadFile("C:\\Users\\Rana\\Desktop\\code.txt"));
+	//cout << Utils::ReadFile("C:\\Users\\Rana\\Desktop\\code.txt");
+	//Parser::CodeParser(Parser::buildDFA(Parser::buildNFAwithEpsilon("C:\\Users\\Rana\\Desktop\\LexicalRules.txt")->GetStart()), Utils::ReadFile("C:\\Users\\Rana\\Desktop\\code.txt"));
 	/*******************************************************/
 	/*string s = Utils::ReadFile("C:\\Users\\Rana\\Desktop\\rules.txt");
 	vector<string>* v = Utils::SplitString(s, "#");
