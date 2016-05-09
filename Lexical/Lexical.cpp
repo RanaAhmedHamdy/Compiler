@@ -44,11 +44,34 @@ vector<string>* Utils::SplitString(string s, string delimiter)
 	size_t pos = 0;
 	string token;
 	vector<string>* tokens = new vector<string>;
+	int i = 0;
+	int savedPosition = 0;
 
-	while ((pos = s.find(delimiter)) != std::string::npos) {
-		token = s.substr(0, pos);
-		tokens->push_back(token);
-		s.erase(0, pos + delimiter.length());
+	while (i < s.length()) {
+			pos = s.find(delimiter, savedPosition);
+			if (pos > s.length()) {
+				i++;
+				continue;
+			}
+			cout << s << "\n";
+			cout << pos << "\n";
+			if (delimiter != " ") {
+				if (s.at(pos - 1) != '\\' && s.at(pos - 1) != '\'') {
+					savedPosition = 0;
+					token = s.substr(0, pos);
+					tokens->push_back(token);
+					s.erase(0, pos + delimiter.length());
+				}
+				else {
+					savedPosition = pos+1;
+				}
+			}
+			else {
+				token = s.substr(0, pos);
+				tokens->push_back(token);
+				s.erase(0, pos + delimiter.length());
+			}
+			i++;
 	}
 	tokens->push_back(s);
 	return tokens;
@@ -192,6 +215,7 @@ public:
 	static NonTerminal* FindNonTerminal(vector<NonTerminal*>* nonterminals, string nonTerminalName);
 	static vector<string>* ParseNonTerminals(Grammer* g, vector<string>* rules);
 	static string removeSingleQuotes(string s);
+	static void removeCharsFromString(string &str, char* charsToRemove);
 	static vector<Production*>* ParseProduction(vector<string>* ruleTerms, Grammer* g);
 	static void ParseAllRules(string production, Grammer* g, int index);
 	static void PrintGrammer(Grammer* g);
@@ -205,7 +229,12 @@ public:
 	static vector<Terminal*>* GetFirstOfProduction(vector<Production*>* production);
 	static void PrintParsingTable(Grammer* g);
 	static void tokensParser(Grammer* g);
+	static bool string_has_all_of_the_same_chars(const string& s);
 };
+
+bool SyntaxAnalyzer::string_has_all_of_the_same_chars(const string& s) {
+	return s.find_first_not_of(s[0]) == string::npos;
+}
 
 void SyntaxAnalyzer::tokensParser(Grammer* g)
 {
@@ -235,8 +264,8 @@ void SyntaxAnalyzer::tokensParser(Grammer* g)
 		}
 		else
 		{
-			map<Terminal*, vector<Production*>*>* m = parsingTable->at[(NonTerminal*)production];
-			vector<Production*>* productionVector = m->at[FindTerminal(g->GetTerminals(), token)];
+			map<Terminal*, vector<Production*>*>* m = parsingTable->at((NonTerminal*)production);
+			vector<Production*>* productionVector = m->at(FindTerminal(g->GetTerminals(), token));
 			if (productionVector->empty()) {
 				//panic error recovery
 				cout << "error illegal (" << production->getName() << ") - discard " << token << "\n";
@@ -349,7 +378,6 @@ void SyntaxAnalyzer::setFollow(Grammer* g) {
 								NonTerminal* n = (NonTerminal*)production->at(k + 1);
 								AddFollow(nonterminals->at(i)->GetFollow(), n->GetFirst());
 
-								//askkkkkkkkkkkkkkkkkkkkkk
 								if (k == production->size() - 2) {
 									NonTerminal* n = (NonTerminal*)production->at(k + 1);
 									if (FindTerminal(n->GetFirst(), "epsilon")) {
@@ -443,11 +471,19 @@ void SyntaxAnalyzer::ParseAllRules(string production, Grammer* g, int index)
 	for (int j = 0; j < allrules->size(); j++) {
 		allrules->at(j) = regex_replace(allrules->at(j), regex("^ +| +$|( ) +"), "$1");
 
+		cout << "\nafter split by or :" << allrules->at(j) << "\n";
+
 		vector<string>* ruleTerms = Utils::SplitString(allrules->at(j), " ");
 		vector<Production*>* productionTerms = ParseProduction(ruleTerms, g);
 		allrulesVector->push_back(productionTerms);
 	}
 	g->GetProductions()->emplace(g->GetNonTerminals()->at(index), allrulesVector);
+}
+
+void SyntaxAnalyzer::removeCharsFromString(string &str, char* charsToRemove) {
+	for (unsigned int i = 0; i < strlen(charsToRemove); ++i) {
+		str.erase(remove(str.begin(), str.end(), charsToRemove[i]), str.end());
+	}
 }
 
 vector<Production*>* SyntaxAnalyzer::ParseProduction(vector<string>* ruleTerms, Grammer* g)
@@ -457,6 +493,9 @@ vector<Production*>* SyntaxAnalyzer::ParseProduction(vector<string>* ruleTerms, 
 	for (int k = 0; k < ruleTerms->size(); k++) {
 		if (ruleTerms->at(k).at(0) == '\'') {
 			ruleTerms->at(k) = removeSingleQuotes(ruleTerms->at(k));
+
+			if(ruleTerms->at(k).length() > 1 && !string_has_all_of_the_same_chars(ruleTerms->at(k)))
+				removeCharsFromString(ruleTerms->at(k), "\\");
 
 			Terminal* search = FindTerminal(g->GetTerminals(), ruleTerms->at(k));
 			if (search) {
@@ -1661,7 +1700,7 @@ int main(int argc, char ** argv)
 	X->emplace('|', Y);
 	operators->push_back(X);
 
-	NFA * node = Parser::buildNFAwithEpsilon("C:\\Users\\Rana\\Desktop\\LexicalRules.txt");
+	/*NFA * node = Parser::buildNFAwithEpsilon("C:\\Users\\Rana\\Desktop\\LexicalRules.txt");
 	Traverse(node->GetStart());
 	DFANode* d = Parser::buildDFA(node->GetStart());
 	TraverseDFA(d);
@@ -1671,10 +1710,11 @@ int main(int argc, char ** argv)
 	/****************************************************/
 
 	/*******************************************************/
-	/*string s = Utils::ReadFile("C:\\Users\\Rana\\Desktop\\rules.txt");
+	string s = Utils::ReadFile("C:\\Users\\Rana\\Desktop\\rules.txt");
+	s.erase(0, 1);
 	vector<string>* v = Utils::SplitString(s, "#");
-	v->erase(v->begin());
-	SyntaxAnalyzer::PrintGrammer(SyntaxAnalyzer::RulesParser(v));*/
+	//v->erase(v->begin());
+	SyntaxAnalyzer::PrintGrammer(SyntaxAnalyzer::RulesParser(v));
 
 	char  c;
 	scanf("%c", &c);
