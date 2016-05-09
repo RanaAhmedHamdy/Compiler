@@ -978,6 +978,8 @@ NFA * Parser::buildNFAwithEpsilon(string Path) {
 				DummyNFA = Parser::RulesParser(Punctuation->at(i));
 				if (DummyNFA)
 				{
+
+
 					DummyNFA->GetEnd()->setType(NODE_TYPE::ACCEPTANCE);
 					DummyNFA->GetEnd()->setLexeme(Punctuation->at(i));
 					GlobalNFA->push_back(DummyNFA);
