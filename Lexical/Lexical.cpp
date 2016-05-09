@@ -420,6 +420,18 @@ void Parser::FillLexemesForTest()
 	lexemes->push_back("+");
 	lexemes->push_back("id");
 	lexemes->push_back("$");
+
+	/*lexemes->push_back("a");
+	lexemes->push_back("a");
+	lexemes->push_back("b");
+	lexemes->push_back("$");*/
+
+	/*lexemes->push_back("c");
+	lexemes->push_back("e");
+	lexemes->push_back("a");
+	lexemes->push_back("d");
+	lexemes->push_back("b");
+	lexemes->push_back("$");*/
 }
 
 void Parser::CodeParser(DFANode* start, string file)
@@ -1402,25 +1414,34 @@ void SyntaxAnalyzer::tokensParser(Grammer* g)
 
 	//getnexttoken
 	string token = Parser::getNextToken();
-	cout << "first token : " << token;
+	//cout << "first token : " << token;
 
 	while (true)
 	{
 		Production* production = productionsStack->top();
 		productionsStack->pop();
-		cout << "name of popped : " << production->getName();
+		cout << production->getName() << " -> ";
 		if (dynamic_cast<Terminal*>(production) != NULL) {
 			Terminal* terminal = (Terminal*)production;
-			if (terminal->getName() == token)
+			if (terminal->getName() == "$" && token == "$") {
+				cout << "accept\n";
+				return;
+			}
+			else if (terminal->getName() == "$" && token != "$") 
 			{
+				token = Parser::getNextToken();
+				productionsStack->push(FindTerminal(g->GetTerminals(), "$"));
+				productionsStack->push(g->getStart());
+			}
+			else if (terminal->getName() == token)
+			{
+				cout << "match\n";
 				//get next token
 				token = Parser::getNextToken();
 			}
 			else {
 				cout << "error missing " << terminal->getName() << "\n";
 			}
-			if (terminal->getName() == "$")
-				return;
 		}
 		else
 		{
@@ -1438,12 +1459,20 @@ void SyntaxAnalyzer::tokensParser(Grammer* g)
 			else if (productionVector->size() == 1 && productionVector->at(0)->getName() == "sync")
 			{
 				//production has been popped and getnexttoken is no called
-				cout << "error M[" << production->getName() << "," << token << "] = sync";
+				cout << "error M[" << production->getName() << "," << token << "] = sync\n";
 			}
-			else if (!(productionVector->size() == 1 && productionVector->at(0)->getName() == "epsilon")) {
+			else if (productionVector->size() == 1 && productionVector->at(0)->getName() == "epsilon")
+			{
+				cout << productionVector->at(0)->getName() << "\n";
+			}
+			else {
+				int j = 0;
 				for (int i = productionVector->size() - 1; i >= 0; i--) {
 					productionsStack->push(productionVector->at(i));
+					cout << productionVector->at(j)->getName() << " ";
+					j++;
 				}
+				cout << "\n";
 			}
 		}
 	}
@@ -1789,22 +1818,21 @@ int main(int argc, char ** argv)
 	X->emplace('|', Y);
 	operators->push_back(X);
 
-	NFA * node = Parser::buildNFAwithEpsilon("C:\\Users\\Mohammed\\Desktop\\LexicalRules.txt");
-	Traverse(node->GetStart());
+	//NFA * node = Parser::buildNFAwithEpsilon("C:\\Users\\Mohammed\\Desktop\\LexicalRules.txt");
+	//Traverse(node->GetStart());
 	
-	DFANode* d = Parser::buildDFA(node->GetStart());
-	TraverseDFA(d);
+	//DFANode* d = Parser::buildDFA(node->GetStart());
+	//TraverseDFA(d);
 
 	//cout << "Number of NFA nodes " << Number << '\n';
 	//cout << "Number of DFA node" << DFANumber << '\n';
 	/****************************************************/
 
 	/*******************************************************/
-	//string s = Utils::ReadFile("C:\\Users\\Rana\\Desktop\\rules.txt");
-	//s.erase(0, 1);
-	//vector<string>* v = Utils::SplitString(s, "#");
-	////v->erase(v->begin());
-	//SyntaxAnalyzer::PrintGrammer(SyntaxAnalyzer::RulesParser(v));
+	string s = Utils::ReadFile("C:\\Users\\Rana\\Desktop\\rules3.txt");
+	s.erase(0, 1);
+	vector<string>* v = Utils::SplitString(s, "#");
+	SyntaxAnalyzer::PrintGrammer(SyntaxAnalyzer::RulesParser(v));
 
 	char  c;
 	scanf("%c", &c);
