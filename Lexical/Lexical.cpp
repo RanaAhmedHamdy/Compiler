@@ -835,7 +835,7 @@ void Parser::SetDFANodeType(DFANode* node)
 		}
 	}
 	std::sort(node->getLexemes()->begin(), node->getLexemes()->end(), [](Node * a, Node *b) {
-		return b->getPriority() < a->getPriority();
+		return b->getPriority() > a->getPriority();
 	});
 }
 
@@ -1208,7 +1208,7 @@ void TraverseDFA(DFANode * n)
 				cout << "Acceptance node: " << n->getNumber();
 				for (size_t i = 0; i < n->getLexemes()->size(); i++)
 				{
-					cout << n->getLexemes()->at(i) << " ,";
+					cout << n->getLexemes()->at(i)->getLexeme() << "||" << n->getLexemes()->at(i)->getPriority() << " ,";
 				}
 				cout << '\n';
 			}
@@ -1792,8 +1792,8 @@ int main(int argc, char ** argv)
 	NFA * node = Parser::buildNFAwithEpsilon("C:\\Users\\Mohammed\\Desktop\\LexicalRules.txt");
 	Traverse(node->GetStart());
 	
-	/*DFANode* d = Parser::buildDFA(node->GetStart());
-	TraverseDFA(d);*/
+	DFANode* d = Parser::buildDFA(node->GetStart());
+	TraverseDFA(d);
 
 	//cout << "Number of NFA nodes " << Number << '\n';
 	//cout << "Number of DFA node" << DFANumber << '\n';
