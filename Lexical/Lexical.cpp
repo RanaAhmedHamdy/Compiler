@@ -228,7 +228,7 @@ private:
 	NODE_TYPE type;
 	string value;
 	string Lexeme;
-	
+	int Priority = 0;
 	int thisNumber;
 public:
 	Node();
@@ -245,6 +245,8 @@ public:
 	void setValue(string value) { this->value = value; }
 	void setLexeme(string lexeme) { this->Lexeme = lexeme; }
 	int getNumber() { return thisNumber; }
+	int getPriority() { return Priority; }
+	void setPriority(int Priority) { this->Priority = Priority; }
 };
 
 vector<Node*>* Node::next(Input * input)
@@ -334,6 +336,7 @@ public:
 	Node* GetEnd() { return End; }
 	void SetStart(Node* N) { Start = N; }
 	void SetEnd(Node * N) { End = N; }
+	static bool Compare(NFA * A, NFA * B) { return A->GetEnd()->getPriority() < B->GetEnd()->getPriority(); }
 };
 
 NFA::NFA()
@@ -469,6 +472,7 @@ NFA * Parser::buildNFAwithEpsilon(string Path) {
 	ifstream file(Path);
 	string str;
 	vector<NFA *>* GlobalNFA = new vector<NFA *>;
+	int Priority = 0;
 	while (getline(file, str))
 	{
 		cout << "Reading Line" << '\n';
@@ -495,6 +499,7 @@ NFA * Parser::buildNFAwithEpsilon(string Path) {
 				DummyNFA = Parser::RulesParser(Dummy);
 				DummyNFA->GetEnd()->setType(NODE_TYPE::ACCEPTANCE);
 				DummyNFA->GetEnd()->setLexeme(Keywords->at(i));
+				DummyNFA->GetEnd()->setPriority(Priority++);
 				GlobalNFA->push_back(DummyNFA);
 			}
 		}
@@ -511,6 +516,7 @@ NFA * Parser::buildNFAwithEpsilon(string Path) {
 				{
 					DummyNFA->GetEnd()->setType(NODE_TYPE::ACCEPTANCE);
 					DummyNFA->GetEnd()->setLexeme(Punctuation->at(i));
+					DummyNFA->GetEnd()->setPriority(Priority++);
 					GlobalNFA->push_back(DummyNFA);
 				}
 
@@ -608,6 +614,7 @@ NFA * Parser::buildNFAwithEpsilon(string Path) {
 				DummyNFA = Parser::RulesParser(Dummy);
 				DummyNFA->GetEnd()->setLexeme(Lexeme);
 				DummyNFA->GetEnd()->setType(NODE_TYPE::ACCEPTANCE);
+				DummyNFA->GetEnd()->setPriority(Priority++);
 				GlobalNFA->push_back(DummyNFA);
 			}
 			//will call a method for creating input
@@ -1159,7 +1166,11 @@ void Traverse(Node * n)
 		{
 			Visited->emplace(n);
 			if (n->getNodeType() == NODE_TYPE::ACCEPTANCE)
+			{
 				cout << "Acceptance on: " << n->getLexeme() << " from " << n->getNumber() << '\n';
+				cout << "Acceptance priority: " << n->getPriority() << '\n';
+			}
+				
 			for (auto p : *n->getNodesMap())
 			{
 
@@ -1772,21 +1783,22 @@ int main(int argc, char ** argv)
 	X->emplace('|', Y);
 	operators->push_back(X);
 
-	/*NFA * node = Parser::buildNFAwithEpsilon("C:\\Users\\Rana\\Desktop\\LexicalRules.txt");
+	NFA * node = Parser::buildNFAwithEpsilon("C:\\Users\\Mohammed\\Desktop\\LexicalRules.txt");
 	Traverse(node->GetStart());
-	DFANode* d = Parser::buildDFA(node->GetStart());
-	TraverseDFA(d);
+	
+	/*DFANode* d = Parser::buildDFA(node->GetStart());
+	TraverseDFA(d);*/
 
 	//cout << "Number of NFA nodes " << Number << '\n';
 	//cout << "Number of DFA node" << DFANumber << '\n';
 	/****************************************************/
 
 	/*******************************************************/
-	string s = Utils::ReadFile("C:\\Users\\Rana\\Desktop\\rules.txt");
-	s.erase(0, 1);
-	vector<string>* v = Utils::SplitString(s, "#");
-	//v->erase(v->begin());
-	SyntaxAnalyzer::PrintGrammer(SyntaxAnalyzer::RulesParser(v));
+	//string s = Utils::ReadFile("C:\\Users\\Rana\\Desktop\\rules.txt");
+	//s.erase(0, 1);
+	//vector<string>* v = Utils::SplitString(s, "#");
+	////v->erase(v->begin());
+	//SyntaxAnalyzer::PrintGrammer(SyntaxAnalyzer::RulesParser(v));
 
 	char  c;
 	scanf("%c", &c);
