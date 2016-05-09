@@ -453,6 +453,7 @@ void Parser::CodeParser(DFANode* start, string file)
 		else {
 			if (lastAcceptence != NULL) {
 				i = pointerOfLastAcc + 1;
+				lexemes->push_back(lastAcceptence->getLexemes()->at(0)->getLexeme());
 				lastAcceptence = NULL;
 				cout << "token : " << token << "\n";
 				tokens->push_back(token);
