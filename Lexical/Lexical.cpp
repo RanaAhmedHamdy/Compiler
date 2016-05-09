@@ -336,7 +336,7 @@ public:
 	Node* GetEnd() { return End; }
 	void SetStart(Node* N) { Start = N; }
 	void SetEnd(Node * N) { End = N; }
-	static bool Compare(NFA * A, NFA * B) { return A->GetEnd()->getPriority() < B->GetEnd()->getPriority(); }
+	
 };
 
 NFA::NFA()
@@ -817,6 +817,9 @@ DFANode* Parser::buildDFA(Node* startNode)
 	return startDFANode;
 }
 
+
+
+
 void Parser::SetDFANodeType(DFANode* node)
 {
 	vector<Node*>* NFANodes = node->GetNFANodes();
@@ -830,7 +833,9 @@ void Parser::SetDFANodeType(DFANode* node)
 			node->getLexemes()->push_back(NFANodes->at(i));
 		}
 	}
-	//cout << "\n";
+	std::sort(node->getLexemes()->begin(), node->getLexemes()->end(), [](Node * a, Node *b) {
+		return b->getPriority() < a->getPriority();
+	});
 }
 
 vector<Node*>* Parser::GetNodesForInput(Input* input, Node* node)
@@ -1804,4 +1809,3 @@ int main(int argc, char ** argv)
 	scanf("%c", &c);
 	return 0;
 }
-
