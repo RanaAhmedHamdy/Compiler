@@ -295,7 +295,7 @@ class DFANode
 private:
 	NODE_TYPE type;
 	vector<string>* values = new vector<string>;
-	vector<string>* lexemes = new vector<string>;
+	vector<Node*>* lexemes = new vector<Node*>;
 	map<Input*, DFANode*>* nodesMap = new map<Input*, DFANode*>;
 	vector<Node*>* NFANodes = new vector<Node*>;
 	int thisNumber;
@@ -307,7 +307,7 @@ public:
 	map<Input*, DFANode*>* getNodesMap() { return nodesMap; }
 	NODE_TYPE getNodeType() { return type; }
 	vector<string>* getValues() { return values; }
-	vector<string>* getLexemes() { return lexemes; }
+	vector<Node*>* getLexemes() { return lexemes; }
 	vector<Node*>* GetNFANodes() { return NFANodes; }
 	int getNumber() { return thisNumber; }
 	void setType(NODE_TYPE type) { this->type = type; }
@@ -819,8 +819,8 @@ void Parser::SetDFANodeType(DFANode* node)
 		//cout << NFANodes->at(i)->getNumber() << " ";
 		if (NFANodes->at(i)->getNodeType() == NODE_TYPE::ACCEPTANCE) {
 			node->setType(NODE_TYPE::ACCEPTANCE);
-			node->getValues()->push_back(NFANodes->at(i)->getValue());
-			node->getLexemes()->push_back(NFANodes->at(i)->getLexeme());
+			//node->getValues()->push_back(NFANodes->at(i)->getValue());
+			node->getLexemes()->push_back(NFANodes->at(i));
 		}
 	}
 	//cout << "\n";
