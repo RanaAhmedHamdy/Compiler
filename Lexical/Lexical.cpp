@@ -568,6 +568,7 @@ NFA * Parser::buildNFAwithEpsilon(string Path) {
 						}
 						Dummy += str[i];
 						wasLetter = true;
+						Enable = true;
 					}
 					else if (str[i] == ' ')
 					{
@@ -576,7 +577,7 @@ NFA * Parser::buildNFAwithEpsilon(string Path) {
 							qOperand = false;
 							wasLetter = false;
 						}
-
+						Enable = true;
 					}
 					else
 					{
@@ -873,7 +874,6 @@ bool Parser::contains(vector<Node*>* nodes, Node* n)
 	}
 	return false;
 }
-
 
 void Parser::SetDFANodeType(DFANode* node)
 {
@@ -1878,7 +1878,7 @@ int main(int argc, char ** argv)
 	init();
 	
 
-	NFA * node = Parser::buildNFAwithEpsilon("C:\\Users\\Rana\\Desktop\\LexicalRules.txt");
+	NFA * node = Parser::buildNFAwithEpsilon("C:\\Users\\Mohammed\\Desktop\\LexicalRules.txt");
 	Traverse(node->GetStart());
 	
 	DFANode* d = Parser::buildDFA(node->GetStart());
