@@ -277,7 +277,6 @@ void Node::AddTransition(Input * Character, Node * LocalStart)
 	AddTransition(Character, X);
 }
 
-
 Node::Node()
 {
 	this->type = NODE_TYPE::NODE;
@@ -305,7 +304,7 @@ private:
 public:
 	DFANode();
 	~DFANode();
-
+	int GroupNumber;
 	map<Input*, DFANode*>* getNodesMap() { return nodesMap; }
 	NODE_TYPE getNodeType() { return type; }
 	vector<string>* getValues() { return values; }
@@ -382,6 +381,8 @@ public:
 	static vector<Input*>* getInputs(DFANode* node);
 	static vector<Node*>* GetNodesForInput(Input* input, Node* node);
 	static void SetDFANodeType(DFANode* node);
+	static int FindDFA(vector<vector<DFANode*>> Groups, DFANode * node);
+	vector<vector<DFANode*>>MinimizeDFA(vector<DFANode*> AllDFAnodes, vector<Input*> Inputs);
 	static void CodeParser(DFANode* start, string file);
 	static NFA* RulesParser(string Regex);
 	static int isOperator(char O);
@@ -577,7 +578,7 @@ NFA * Parser::buildNFAwithEpsilon(string Path) {
 							qOperand = false;
 							wasLetter = false;
 						}
-
+						Enable = true;
 					}
 					else
 					{
@@ -875,7 +876,6 @@ bool Parser::contains(vector<Node*>* nodes, Node* n)
 	return false;
 }
 
-
 void Parser::SetDFANodeType(DFANode* node)
 {
 	vector<Node*>* NFANodes = node->GetNFANodes();
@@ -893,6 +893,98 @@ void Parser::SetDFANodeType(DFANode* node)
 		return b->getPriority() > a->getPriority();
 	});
 }
+
+int Parser::FindDFA(vector<vector<DFANode*>> Groups, DFANode * node)
+{
+	for (size_t i = 0; i < Groups.size(); i++)
+	{
+		for (size_t j = 0; j < Groups[i].size(); j++)
+		{
+			if (Groups[i][j] == node)
+				return i;
+		}
+	}
+}
+
+vector<vector<DFANode*>> Parser::MinimizeDFA(vector<DFANode*> AllDFAnodes, vector<Input*> Inputs)
+{
+	vector<vector<DFANode*>> Groups;
+#pragma region InitiateGroups
+	map<string, int> AcceptanceIndecies;
+	vector<DFANode *> Start;
+	Groups.push_back(Start);
+	for (size_t i = 0; i < AllDFAnodes.size(); i++)
+	{
+		//holds the first NFA node in the acceptance vector
+		Node * Dummy = AllDFAnodes[i]->getLexemes()->at(0);
+		if (Dummy->getNodeType() == NODE_TYPE::ACCEPTANCE)
+		{
+			if (AcceptanceIndecies.find(Dummy->getLexeme()) != AcceptanceIndecies.end())
+			{
+				Groups[AcceptanceIndecies.find(Dummy->getLexeme())->second].push_back(AllDFAnodes[i]);
+			}
+			else
+			{
+				vector<DFANode*> X;
+				X.push_back(AllDFAnodes[i]);
+				AcceptanceIndecies.emplace(Dummy->getLexeme(), Groups.size());
+				Groups.push_back(X);
+			}
+		}
+		else
+		{
+			AllDFAnodes[i]->GroupNumber = 0;
+			Groups[0].push_back(AllDFAnodes[i]);
+		}
+	}
+#pragma endregion
+
+#pragma region Partitioning
+	for (size_t i = 0; i < Inputs.size(); i++)
+	{
+		map<int, int> WhoWhere;
+		for (size_t j = 0; j < Groups.size(); j++)
+		{
+			for (size_t k = 0; k < Groups[j].size(); k++)
+			{
+				if (Groups[j][k]->getNodesMap()->find(Inputs[i]) != Groups[j][k]->getNodesMap()->end())
+				{
+					if (FindDFA(Groups, Groups[j][k]) != j)
+					{
+						if (WhoWhere.find(Groups[i][k]->getNodesMap()->find(Inputs[i])->second->GroupNumber) != WhoWhere.end())
+						{
+							Groups[j][k]->GroupNumber = WhoWhere.find(Groups[i][k]->getNodesMap()->find(Inputs[i])->second->GroupNumber)->second;
+							Groups[Groups[j][k]->GroupNumber].push_back(Groups[j][k]);
+							Groups[j].erase(Groups[i].begin() + k);
+						}
+						else
+						{
+							vector<DFANode *> Y;
+							Y.push_back(Groups[j][k]);
+							Groups[j][k]->GroupNumber = Groups.size();
+							Groups.push_back(Y);
+							WhoWhere.emplace(WhoWhere.find(Groups[i][k]->getNodesMap()->find(Inputs[i])->second->GroupNumber), Groups[j][k]->GroupNumber);
+							Groups[j].erase(Groups[j].begin() + k);
+						}
+
+					}
+					else
+					{
+						Groups[j][k]->GroupNumber = j;
+					}
+				}
+				else
+				{
+					Groups[j][k]->GroupNumber = j;
+				}
+			}
+		}
+	}
+#pragma endregion
+
+	return Groups;
+}
+
 
 vector<Node*>* Parser::GetNodesForInput(Input* input, Node* node)
 {
@@ -1216,6 +1308,8 @@ string Parser::CleanBrackets(string Regex)
 	return Regex;
 
 }
+
+
 
 /***************************************************************************************/
 set<Node*>* Visited = new set<Node*>;
@@ -1878,14 +1972,16 @@ int main(int argc, char ** argv)
 {
 	init();
 	
+	
 
-	NFA * node = Parser::buildNFAwithEpsilon("C:\\Users\\Rana\\Desktop\\LexicalRules.txt");
+
+	/*NFA * node = Parser::buildNFAwithEpsilon("C:\\Users\\Mohammed\\Desktop\\LexicalRules.txt");
 	Traverse(node->GetStart());
 	
 	DFANode* d = Parser::buildDFA(node->GetStart());
 	TraverseDFA(d);
 
-	Parser::CodeParser(d, Utils::ReadFile("C:\\Users\\Mohammed\\Desktop\\code.txt"));
+	Parser::CodeParser(d, Utils::ReadFile("C:\\Users\\Mohammed\\Desktop\\code.txt"));*/
 
 	//cout << "Number of NFA nodes " << Number << '\n';
 	//cout << "Number of DFA node" << DFANumber << '\n';
