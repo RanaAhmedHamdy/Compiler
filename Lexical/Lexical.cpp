@@ -568,6 +568,7 @@ NFA * Parser::buildNFAwithEpsilon(string Path) {
 						}
 						Dummy += str[i];
 						wasLetter = true;
+						Enable = true;
 					}
 					else if (str[i] == ' ')
 					{
