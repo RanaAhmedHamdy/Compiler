@@ -363,6 +363,7 @@ map<string, Input*>* InputDefinitions = new map<string, Input*>;
 
 vector<Operators *>* operators = new vector<Operators*>;
 
+
 /**********************************************************************************/
 class Parser
 {
@@ -372,6 +373,8 @@ public:
 	static NFA* CreateUnion(vector<NFA*>* NFACollection);
 	static NFA* CreateConcatition(vector<NFA*>* NFACollection);
 	static NFA* CreateKleen(vector<NFA*>* nfa);
+	static NFA* CreatePositive(vector<NFA*> * nfa);
+	static NFA* CreateOptional(vector<NFA*> * nfa);
 	static DFANode* buildDFA(Node* startnode);
 	static DFANode* compareTwoVectors(vector<Node*>* nodes, vector<DFANode*>* allDFAStates);
 	static vector<Node*>* EpsilonClosure(vector<Node*>* nodes);
@@ -729,7 +732,24 @@ NFA * Parser::CreateKleen(vector<NFA*> *  nfa)
 	X->GetStart()->GetEpsilon()->push_back(nfa->at(0)->GetStart());
 	nfa->at(0)->GetEnd()->GetEpsilon()->push_back(X->GetEnd());
 	nfa->at(0)->GetEnd()->GetEpsilon()->push_back(nfa->at(0)->GetStart());
-	X->GetEnd()->setType(NODE_TYPE::ACCEPTANCE);
+	return X;
+}
+
+NFA * Parser::CreatePositive(vector<NFA*>* nfa)
+{
+	NFA * X = new NFA;
+	X->GetStart()->GetEpsilon()->push_back(nfa->at(0)->GetStart());
+	nfa->at(0)->GetEnd()->GetEpsilon()->push_back(X->GetEnd());
+	nfa->at(0)->GetEnd()->GetEpsilon()->push_back(nfa->at(0)->GetStart());
+	return X;
+}
+
+NFA * Parser::CreateOptional(vector<NFA *>* nfa)
+{
+	NFA * X = new NFA;
+	X->GetStart()->GetEpsilon()->push_back(nfa->at(0)->GetStart());
+	X->GetStart()->GetEpsilon()->push_back(X->GetEnd());
+	nfa->at(0)->GetEnd()->GetEpsilon()->push_back(X->GetEnd());
 	return X;
 }
 
@@ -1813,15 +1833,27 @@ Grammer* SyntaxAnalyzer::RulesParser(vector<string>* rules)
 }
 /*************************************************************************/
 /*******************************************************************************************/
-int main(int argc, char ** argv)
-{
 
+void init()
+{
 	//level 0 operators
 	Operators * X = new Operators;
 	OperatorDetails * Y = new OperatorDetails;
 	Y->Action = &Parser::CreateKleen;
 	Y->NumberOfOperands = 1;
 	X->emplace('*', Y);
+	operators->push_back(X);
+
+	Y = new OperatorDetails;
+	Y->Action = &Parser::CreatePositive;
+	Y->NumberOfOperands = 1;
+	X->emplace('+', Y);
+	operators->push_back(X);
+
+	Y = new OperatorDetails;
+	Y->Action = &Parser::CreateOptional;
+	Y->NumberOfOperands = 1;
+	X->emplace('?', Y);
 	operators->push_back(X);
 
 	//level 1 operators
@@ -1839,6 +1871,12 @@ int main(int argc, char ** argv)
 	Y->NumberOfOperands = 2;
 	X->emplace('|', Y);
 	operators->push_back(X);
+}
+
+int main(int argc, char ** argv)
+{
+	init();
+	
 
 	NFA * node = Parser::buildNFAwithEpsilon("C:\\Users\\Rana\\Desktop\\LexicalRules.txt");
 	Traverse(node->GetStart());
@@ -1846,8 +1884,10 @@ int main(int argc, char ** argv)
 	DFANode* d = Parser::buildDFA(node->GetStart());
 	TraverseDFA(d);
 
-	cout << "Number of NFA nodes " << Number << '\n';
-	cout << "Number of DFA node" << DFANumber << '\n';
+	Parser::CodeParser(d, Utils::ReadFile("C:\\Users\\Mohammed\\Desktop\\code.txt"));
+
+	//cout << "Number of NFA nodes " << Number << '\n';
+	//cout << "Number of DFA node" << DFANumber << '\n';
 	/****************************************************/
 
 	/*******************************************************/
