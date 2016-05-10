@@ -389,6 +389,7 @@ public:
 	static bool isLetter(char Letter);
 	static string getNextToken();
 	static void FillLexemesForTest();
+	static bool contains(vector<Node*>* nodes, Node* n);
 };
 
 bool Parser::checkIfcharBelongsToMap(DFANode** current, char input)
@@ -779,7 +780,13 @@ DFANode* Parser::buildDFA(Node* startNode)
 
 					vector<Node*>* R = GetNodesForInput(inputs->at(i), currentDFANode->GetNFANodes()->at(j));
 					if (!R->empty()) {
-						currentStates->insert(currentStates->end(), R->begin(), R->end());
+						for (int a = 0; a < R->size(); a++) {
+							//currentStates->insert(currentStates->end(), R->begin(), R->end());
+							if (!contains(currentStates, R->at(a)))
+							{
+								currentStates->push_back(R->at(a));
+							}
+						}
 					}
 				}
 
@@ -787,8 +794,16 @@ DFANode* Parser::buildDFA(Node* startNode)
 				if (!currentStates->empty()) {
 					//get epsilon for all current states and add them to vector current states
 					vector<Node*>* o = EpsilonClosure(currentStates);
-					if (!o->empty())
-						currentStates->insert(currentStates->end(), o->begin(), o->end());
+					if (!o->empty()) {
+						//currentStates->insert(currentStates->end(), o->begin(), o->end());
+						for (int a = 0; a < o->size(); a++) {
+							//currentStates->insert(currentStates->end(), R->begin(), R->end());
+							if (!contains(currentStates, o->at(a)))
+							{
+								currentStates->push_back(o->at(a));
+							}
+						}
+					}
 
 					//check if vector found in one of the DFA states add it to the map
 					DFANode* result = compareTwoVectors(currentStates, allDFAStates);
@@ -823,14 +838,21 @@ DFANode* Parser::buildDFA(Node* startNode)
 					}
 				}
 				currentStates->clear();
-				currentStates->shrink_to_fit();
+				//currentStates->shrink_to_fit();
 			}
 		}
 	}
 	return startDFANode;
 }
 
-
+bool Parser::contains(vector<Node*>* nodes, Node* n)
+{
+	for (int i = 0; i < nodes->size(); i++) {
+		if (nodes->at(i) == n)
+			return true;
+	}
+	return false;
+}
 
 
 void Parser::SetDFANodeType(DFANode* node)
@@ -1818,21 +1840,21 @@ int main(int argc, char ** argv)
 	X->emplace('|', Y);
 	operators->push_back(X);
 
-	//NFA * node = Parser::buildNFAwithEpsilon("C:\\Users\\Mohammed\\Desktop\\LexicalRules.txt");
-	//Traverse(node->GetStart());
+	NFA * node = Parser::buildNFAwithEpsilon("C:\\Users\\Rana\\Desktop\\LexicalRules.txt");
+	Traverse(node->GetStart());
 	
-	//DFANode* d = Parser::buildDFA(node->GetStart());
-	//TraverseDFA(d);
+	DFANode* d = Parser::buildDFA(node->GetStart());
+	TraverseDFA(d);
 
-	//cout << "Number of NFA nodes " << Number << '\n';
-	//cout << "Number of DFA node" << DFANumber << '\n';
+	cout << "Number of NFA nodes " << Number << '\n';
+	cout << "Number of DFA node" << DFANumber << '\n';
 	/****************************************************/
 
 	/*******************************************************/
-	string s = Utils::ReadFile("C:\\Users\\Rana\\Desktop\\rules3.txt");
+	/*string s = Utils::ReadFile("C:\\Users\\Rana\\Desktop\\rules3.txt");
 	s.erase(0, 1);
 	vector<string>* v = Utils::SplitString(s, "#");
-	SyntaxAnalyzer::PrintGrammer(SyntaxAnalyzer::RulesParser(v));
+	SyntaxAnalyzer::PrintGrammer(SyntaxAnalyzer::RulesParser(v));*/
 
 	char  c;
 	scanf("%c", &c);
