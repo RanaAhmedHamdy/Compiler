@@ -963,7 +963,7 @@ vector<vector<DFANode*>> Parser::MinimizeDFA(vector<DFANode*> AllDFAnodes, vecto
 							Y.push_back(Groups[j][k]);
 							Groups[j][k]->GroupNumber = Groups.size();
 							Groups.push_back(Y);
-							WhoWhere.emplace(WhoWhere.find(Groups[i][k]->getNodesMap()->find(Inputs[i])->second->GroupNumber), Groups[j][k]->GroupNumber);
+							WhoWhere.emplace(WhoWhere.find(Groups[i][k]->getNodesMap()->find(Inputs[i])->second->GroupNumber)->first, Groups[j][k]->GroupNumber);
 							Groups[j].erase(Groups[j].begin() + k);
 						}
 
