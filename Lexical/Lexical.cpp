@@ -447,6 +447,7 @@ void Parser::CodeParser(DFANode* start, string file)
 	int pointerOfLastAcc = 0;
 	int i = 0;
 	string token = "";
+	map<string, string>* symbolTable = new map<string, string>;
 
 	DFAStatesQueue->push(start);
 
@@ -471,6 +472,7 @@ void Parser::CodeParser(DFANode* start, string file)
 			if (lastAcceptence != NULL) {
 				i = pointerOfLastAcc + 1;
 				cout << lastAcceptence->getLexemes()->at(0)->getLexeme() << "\n";
+				symbolTable->emplace(token, "");
 				lexemes->push_back(lastAcceptence->getLexemes()->at(0)->getLexeme());
 				lastAcceptence = NULL;
 				//cout << "token : " << token << "\n";
@@ -1549,9 +1551,9 @@ bool SyntaxAnalyzer::string_has_all_of_the_same_chars(const string& s) {
 void SyntaxAnalyzer::tokensParser(Grammer* g)
 {
 	map<NonTerminal*, map<Terminal*, vector<Production*>*>*>* parsingTable = g->GetParsingTable();
-	stack<Production*>* productionsStack = new stack<Production*>;
-	productionsStack->push(FindTerminal(g->GetTerminals(), "$"));
-	productionsStack->push(g->getStart());
+	vector<Production*>* productionsStack = new vector<Production*>;
+	productionsStack->push_back(FindTerminal(g->GetTerminals(), "$"));
+	productionsStack->push_back(g->getStart());
 
 	//getnexttoken
 	string token = Parser::getNextToken();
@@ -1559,8 +1561,12 @@ void SyntaxAnalyzer::tokensParser(Grammer* g)
 
 	while (true)
 	{
-		Production* production = productionsStack->top();
-		productionsStack->pop();
+		//print stack
+		for (int i = 0; i < productionsStack->size(); i++)
+			cout << productionsStack->at(i)->getName() << " ";
+		cout << "\n";
+		Production* production = productionsStack->at(productionsStack->size()-1);
+		productionsStack->pop_back();
 		cout << production->getName() << " -> ";
 		if (dynamic_cast<Terminal*>(production) != NULL) {
 			Terminal* terminal = (Terminal*)production;
@@ -1571,8 +1577,9 @@ void SyntaxAnalyzer::tokensParser(Grammer* g)
 			else if (terminal->getName() == "$" && token != "$") 
 			{
 				token = Parser::getNextToken();
-				productionsStack->push(FindTerminal(g->GetTerminals(), "$"));
-				productionsStack->push(g->getStart());
+				productionsStack->push_back(FindTerminal(g->GetTerminals(), "$"));
+				productionsStack->push_back(g->getStart());
+				cout << "\n";
 			}
 			else if (terminal->getName() == token)
 			{
@@ -1593,7 +1600,7 @@ void SyntaxAnalyzer::tokensParser(Grammer* g)
 			if (productionVector->empty()) {
 				//panic error recovery
 				cout << "error illegal (" << production->getName() << ") - discard " << token << "\n";
-				productionsStack->push(production);
+				productionsStack->push_back(production);
 				//get next token
 				token = Parser::getNextToken();
 			}
@@ -1609,7 +1616,7 @@ void SyntaxAnalyzer::tokensParser(Grammer* g)
 			else {
 				int j = 0;
 				for (int i = productionVector->size() - 1; i >= 0; i--) {
-					productionsStack->push(productionVector->at(i));
+					productionsStack->push_back(productionVector->at(i));
 					cout << productionVector->at(j)->getName() << " ";
 					j++;
 				}
@@ -1647,6 +1654,19 @@ vector<Terminal*>* SyntaxAnalyzer::GetFirstOfProduction(vector<Production*>* pro
 	return first;
 }
 
+bool checkIfGrammerIsLL1(NonTerminal* nonterminal, Terminal* terminal, Grammer* g)
+{
+	if (g->GetParsingTable()->find(nonterminal) != g->GetParsingTable()->end())
+	{
+		map<Terminal*, vector<Production*>*>* temp = g->GetParsingTable()->at(nonterminal);
+		if (temp->find(terminal) != temp->end()) {
+			cout << "not ll(1) grammer\n";
+			return false;
+		}
+	}
+	return true;
+}
+
 void SyntaxAnalyzer::FillParsingTable(Grammer* g)
 {
 	for (auto p : *g->GetProductions())
@@ -1654,17 +1674,21 @@ void SyntaxAnalyzer::FillParsingTable(Grammer* g)
 		for (int i = 0; i < p.second->size(); i++)
 		{
 			vector<Terminal*>* firstOfProduction = GetFirstOfProduction(p.second->at(i));
-			bool foundEpsilon = false;
 			for (int j = 0; j < firstOfProduction->size(); j++) {
 				if (firstOfProduction->at(j)->getName() != "epsilon") {
+					/*if (!checkIfGrammerIsLL1(p.first, firstOfProduction->at(j), g))
+						return;*/
 					g->AddToParsingTable(p.first, firstOfProduction->at(j), p.second->at(i));
 				}
 				else {
-					foundEpsilon = true;
 					if (FindTerminal(p.first->GetFollow(), "$")) {
+						/*if (!checkIfGrammerIsLL1(p.first, FindTerminal(g->GetTerminals(), "$"), g))
+							return;*/
 						g->AddToParsingTable(p.first, FindTerminal(g->GetTerminals(), "$"), p.second->at(i));
 					}
 					for (int k = 0; k < p.first->GetFollow()->size(); k++) {
+						/*if (!checkIfGrammerIsLL1(p.first, p.first->GetFollow()->at(k), g))
+							return;*/
 						g->AddToParsingTable(p.first, p.first->GetFollow()->at(k), p.second->at(i));
 					}
 				}
@@ -1979,7 +2003,7 @@ int main(int argc, char ** argv)
 	
 
 
-	NFA * node = Parser::buildNFAwithEpsilon("C:\\Users\\Rana\\Desktop\\LexicalRules.txt");
+	/*NFA * node = Parser::buildNFAwithEpsilon("C:\\Users\\Rana\\Desktop\\LexicalRules.txt");
 	//Traverse(node->GetStart());
 	
 	DFANode* d = Parser::buildDFA(node->GetStart());
@@ -1992,10 +2016,10 @@ int main(int argc, char ** argv)
 	/****************************************************/
 
 	/*******************************************************/
-	/*string s = Utils::ReadFile("C:\\Users\\Rana\\Desktop\\rules3.txt");
+	string s = Utils::ReadFile("C:\\Users\\Rana\\Desktop\\rules3.txt");
 	s.erase(0, 1);
 	vector<string>* v = Utils::SplitString(s, "#");
-	SyntaxAnalyzer::PrintGrammer(SyntaxAnalyzer::RulesParser(v));*/
+	SyntaxAnalyzer::PrintGrammer(SyntaxAnalyzer::RulesParser(v));
 
 	char  c;
 	scanf("%c", &c);
