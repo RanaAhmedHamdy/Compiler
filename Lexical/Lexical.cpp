@@ -599,6 +599,11 @@ NFA * Parser::buildNFAwithEpsilon(string Path) {
 							qOperand = false;
 							wasLetter = false;
 						}
+						if (!Enable)
+						{
+							Dummy += str[i];
+							qOperand = false;
+						}
 						Enable = true;
 					}
 					else
@@ -1200,7 +1205,12 @@ NFA * Parser::RulesParser(string Regex)
 			string Insert = "";
 			for (size_t i = 0; i < Extract.length(); i++)
 			{
-				if (Extract[i] != ' ')
+				if (Extract[i] == '\\')
+				{
+					Insert.append(1, Extract[i++]);
+					Insert.append(1, Extract[i]);
+				}					
+				else if (Extract[i] != ' ')
 					Insert.append(1, Extract[i]);
 			}
 			Operands.push_back(Insert);
