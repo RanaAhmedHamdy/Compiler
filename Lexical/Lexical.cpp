@@ -20,6 +20,7 @@ class Utils
 {
 public:
 	static vector<string>* SplitString(string s, string delm);
+	static vector<string>* NFASplitString(string s, string delimiter);
 	static string ReadFile(string s);
 	static vector<string>* SplitStringOnce(string s, string delm);
 };
@@ -72,6 +73,21 @@ vector<string>* Utils::SplitString(string s, string delimiter)
 				s.erase(0, pos + delimiter.length());
 			}
 			i++;
+	}
+	tokens->push_back(s);
+	return tokens;
+}
+
+vector<string>* Utils::NFASplitString(string s, string delimiter)
+{
+	size_t pos = 0;
+	string token;
+	vector<string>* tokens = new vector<string>;
+
+	while ((pos = s.find(delimiter)) != std::string::npos) {
+		token = s.substr(0, pos);
+		tokens->push_back(token);
+		s.erase(0, pos + delimiter.length());
 	}
 	tokens->push_back(s);
 	return tokens;
@@ -507,7 +523,7 @@ NFA * Parser::buildNFAwithEpsilon(string Path) {
 		case '{':
 		{
 			k++;
-			vector<string> * Keywords = Utils::SplitString(str.substr(k, str.find('}') - 1), " ");
+			vector<string> * Keywords = Utils::NFASplitString(str.substr(k, str.find('}') - 1), " ");
 
 			NFA * DummyNFA;
 			for (size_t i = 0; i < Keywords->size(); i++)
@@ -530,7 +546,7 @@ NFA * Parser::buildNFAwithEpsilon(string Path) {
 		case '[':
 		{
 			k++;
-			vector<string>* Punctuation = Utils::SplitString(str.substr(k, str.find(']') - 1), " ");
+			vector<string>* Punctuation = Utils::NFASplitString(str.substr(k, str.find(']') - 1), " ");
 			NFA * DummyNFA;
 			for (size_t i = 0; i < Punctuation->size(); i++)
 			{
@@ -650,7 +666,7 @@ NFA * Parser::buildNFAwithEpsilon(string Path) {
 					if (str[i] != ' ')
 						Dummy += str[i];
 				}
-				vector<string>* Split = Utils::SplitString(str, "|");
+				vector<string>* Split = Utils::NFASplitString(str, "|");
 				Input * I = new Input;
 				I->SetName(Lexeme);
 				for (size_t i = 0; i < Split->size(); i++)
@@ -2003,23 +2019,23 @@ int main(int argc, char ** argv)
 	
 
 
-	/*NFA * node = Parser::buildNFAwithEpsilon("C:\\Users\\Rana\\Desktop\\LexicalRules.txt");
-	//Traverse(node->GetStart());
+	NFA * node = Parser::buildNFAwithEpsilon("C:\\Users\\Mohammed\\Desktop\\LexicalRules.txt");
+	Traverse(node->GetStart());
 	
 	DFANode* d = Parser::buildDFA(node->GetStart());
-	//TraverseDFA(d);
+	TraverseDFA(d);
 
-	Parser::CodeParser(d, Utils::ReadFile("C:\\Users\\Rana\\Desktop\\code.txt"));
+	Parser::CodeParser(d, Utils::ReadFile("C:\\Users\\Mohammed\\Desktop\\code.txt"));
 
 	//cout << "Number of NFA nodes " << Number << '\n';
 	//cout << "Number of DFA node" << DFANumber << '\n';
 	/****************************************************/
 
 	/*******************************************************/
-	string s = Utils::ReadFile("C:\\Users\\Rana\\Desktop\\rules3.txt");
+	/*string s = Utils::ReadFile("C:\\Users\\Rana\\Desktop\\rules3.txt");
 	s.erase(0, 1);
 	vector<string>* v = Utils::SplitString(s, "#");
-	SyntaxAnalyzer::PrintGrammer(SyntaxAnalyzer::RulesParser(v));
+	SyntaxAnalyzer::PrintGrammer(SyntaxAnalyzer::RulesParser(v));*/
 
 	char  c;
 	scanf("%c", &c);
