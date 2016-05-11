@@ -910,7 +910,7 @@ int Parser::FindDFA(vector<vector<DFANode*>> Groups, DFANode * node)
 	}
 }
 
-/*vector<vector<DFANode*>> Parser::MinimizeDFA(vector<DFANode*> AllDFAnodes, vector<Input*> Inputs)
+vector<vector<DFANode*>> Parser::MinimizeDFA(vector<DFANode*> AllDFAnodes, vector<Input*> Inputs)
 {
 	vector<vector<DFANode*>> Groups;
 #pragma region InitiateGroups
@@ -987,7 +987,7 @@ int Parser::FindDFA(vector<vector<DFANode*>> Groups, DFANode * node)
 #pragma endregion
 
 	return Groups;
-}*/
+}
 
 
 vector<Node*>* Parser::GetNodesForInput(Input* input, Node* node)
