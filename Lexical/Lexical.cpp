@@ -546,7 +546,19 @@ NFA * Parser::buildNFAwithEpsilon(string Path) {
 		case '[':
 		{
 			k++;
-			vector<string>* Punctuation = Utils::NFASplitString(str.substr(k, str.find(']') - 1), " ");
+			//get index for ]
+			int SquareBracketLocation;
+			for (size_t i = 0; i < str.length(); i++)
+			{
+				if (str[i] == '\\')
+					i++;
+				else if (str[i] == ']')
+				{
+					SquareBracketLocation = i;
+					break;
+				}
+			}
+			vector<string>* Punctuation = Utils::NFASplitString(str.substr(k, SquareBracketLocation - 1), " ");
 			NFA * DummyNFA;
 			for (size_t i = 0; i < Punctuation->size(); i++)
 			{
@@ -662,7 +674,6 @@ NFA * Parser::buildNFAwithEpsilon(string Path) {
 				DummyNFA->GetEnd()->setPriority(Priority++);
 				GlobalNFA->push_back(DummyNFA);
 			}
-			//will call a method for creating input
 			else if (str[k] == '=')
 			{
 				string Dummy = "";
