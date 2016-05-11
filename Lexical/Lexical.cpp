@@ -470,15 +470,18 @@ void Parser::CodeParser(DFANode* start, string file)
 		else {
 			if (lastAcceptence != NULL) {
 				i = pointerOfLastAcc + 1;
+				cout << lastAcceptence->getLexemes()->at(0)->getLexeme() << "\n";
 				lexemes->push_back(lastAcceptence->getLexemes()->at(0)->getLexeme());
 				lastAcceptence = NULL;
-				cout << "token : " << token << "\n";
+				//cout << "token : " << token << "\n";
 				tokens->push_back(token);
 				token = "";
 				while (!DFAStatesQueue->empty()) DFAStatesQueue->pop();
 				DFAStatesQueue->push(start);
 			}
 			else {
+				if (file.at(i) != ' ' && file.at(i) != '\n' && file.at(i) != '\t')
+					cout << "error\n";
 				i++;
 				DFAStatesQueue->push(current);
 			}
@@ -887,11 +890,12 @@ void Parser::SetDFANodeType(DFANode* node)
 			node->setType(NODE_TYPE::ACCEPTANCE);
 			//node->getValues()->push_back(NFANodes->at(i)->getValue());
 			node->getLexemes()->push_back(NFANodes->at(i));
+			//cout << "\n lexeme : " << node->getLexemes()->at(0)->getLexeme() << "\n";
 		}
 	}
-	std::sort(node->getLexemes()->begin(), node->getLexemes()->end(), [](Node * a, Node *b) {
+	/*std::sort(node->getLexemes()->begin(), node->getLexemes()->end(), [](Node * a, Node *b) {
 		return b->getPriority() > a->getPriority();
-	});
+	});*/
 }
 
 int Parser::FindDFA(vector<vector<DFANode*>> Groups, DFANode * node)
@@ -906,7 +910,7 @@ int Parser::FindDFA(vector<vector<DFANode*>> Groups, DFANode * node)
 	}
 }
 
-vector<vector<DFANode*>> Parser::MinimizeDFA(vector<DFANode*> AllDFAnodes, vector<Input*> Inputs)
+/*vector<vector<DFANode*>> Parser::MinimizeDFA(vector<DFANode*> AllDFAnodes, vector<Input*> Inputs)
 {
 	vector<vector<DFANode*>> Groups;
 #pragma region InitiateGroups
@@ -983,7 +987,7 @@ vector<vector<DFANode*>> Parser::MinimizeDFA(vector<DFANode*> AllDFAnodes, vecto
 #pragma endregion
 
 	return Groups;
-}
+}*/
 
 
 vector<Node*>* Parser::GetNodesForInput(Input* input, Node* node)
@@ -1074,26 +1078,26 @@ vector<Node*>* Parser::EpsilonClosure(Node* node)
 
 vector<Input*>* Parser::getInputs(DFANode* node)
 {
-	cout << "=====================================\n";
-	cout << "DFA node number : " << node->getNumber() << "\n";
-	cout << "eq nfa nodes: ";
+	//cout << "=====================================\n";
+	//cout << "DFA node number : " << node->getNumber() << "\n";
+	//cout << "eq nfa nodes: ";
 	vector<Node*>* t = node->GetNFANodes();
 	vector<Input*>* output = new vector<Input*>;
 
 	for (size_t i = 0; i < t->size(); i++) {
-		cout << t->at(i)->getNumber() << " ";
+		//cout << t->at(i)->getNumber() << " ";
 		for (auto p : *t->at(i)->getNodesMap())
 		{
 			if (find(output->begin(), output->end(), p.first) == output->end())
 			{
 				// Element not in vector.
-				cout << "Input : " << p.first->GetName() << "\n";
+				//cout << "Input : " << p.first->GetName() << "\n";
 				output->push_back(p.first);
 			}
 		}
-		cout << "\n";
+		//cout << "\n";
 	}
-	cout << "=====================================\n";
+	//cout << "=====================================\n";
 	return output;
 }  //el DFA
 
@@ -1975,13 +1979,13 @@ int main(int argc, char ** argv)
 	
 
 
-	/*NFA * node = Parser::buildNFAwithEpsilon("C:\\Users\\Mohammed\\Desktop\\LexicalRules.txt");
-	Traverse(node->GetStart());
+	NFA * node = Parser::buildNFAwithEpsilon("C:\\Users\\Rana\\Desktop\\LexicalRules.txt");
+	//Traverse(node->GetStart());
 	
 	DFANode* d = Parser::buildDFA(node->GetStart());
-	TraverseDFA(d);
+	//TraverseDFA(d);
 
-	Parser::CodeParser(d, Utils::ReadFile("C:\\Users\\Mohammed\\Desktop\\code.txt"));*/
+	Parser::CodeParser(d, Utils::ReadFile("C:\\Users\\Rana\\Desktop\\code.txt"));
 
 	//cout << "Number of NFA nodes " << Number << '\n';
 	//cout << "Number of DFA node" << DFANumber << '\n';
